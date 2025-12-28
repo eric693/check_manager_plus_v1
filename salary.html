@@ -1516,9 +1516,9 @@
                 (parseFloat(data['福利金扣款']) || 0) +
                 (parseFloat(data['宿舍費用']) || 0) +
                 (parseFloat(data['團保費用']) || 0) +
-                (parseFloat(data['員工活動費']) || 0) +    // ⭐ 新增
-                (parseFloat(data['工會費']) || 0) +        // ⭐ 新增
-                (parseFloat(data['其他扣款']) || 0);
+
+                (parseFloat(data['其他扣款1']) || 0) +  // ⭐ 改名
+                (parseFloat(data['其他扣款2']) || 0);   // ⭐ 改名
             safeSet('detail-other-deductions', formatCurrency(otherDeductions));
             
             // 銀行資訊
