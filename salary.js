@@ -559,16 +559,16 @@ function displayEmployeeSalary(data) {
             );
         }
     }
-    
+   
     // 其他津貼（時薪和月薪都顯示）
     safeSet('detail-position-allowance', formatCurrency(data['職務加給'] || 0));
     safeSet('detail-meal-allowance', formatCurrency(data['伙食費'] || 0));
     safeSet('detail-transport-allowance', formatCurrency(data['交通補助'] || 0));
     safeSet('detail-attendance-bonus', formatCurrency(data['全勤獎金'] || 0));
     safeSet('detail-performance-bonus', formatCurrency(data['績效獎金'] || 0));
-    // safeSet('detail-weekday-overtime', formatCurrency(data['平日加班費']));
-    // safeSet('detail-restday-overtime', formatCurrency(data['休息日加班費']));
-    // safeSet('detail-holiday-overtime', formatCurrency(data['國定假日加班費']));
+    safeSet('detail-other-allowance-1', formatCurrency(data['其他津貼1'] || 0));
+    safeSet('detail-other-allowance-2', formatCurrency(data['其他津貼2'] || 0));
+    safeSet('detail-other-allowance-3', formatCurrency(data['其他津貼3'] || 0));
     // ⭐⭐⭐ 修正：兼容兩種格式（camelCase 和中文欄位）
     const weekdayPay = data.weekdayOvertimePay !== undefined 
         ? data.weekdayOvertimePay 
@@ -1174,20 +1174,9 @@ function displaySalaryCalculation(data, container) {
                         <span>團保費用</span>
                         <span class="font-mono">${formatCurrency(data.groupInsurance || 0)}</span>
                     </div>
-                    <!-- 其他扣款1 -->
-                    <div class="form-group">
-                        <label class="form-label">其他扣款1</label>
-                        <input type="number" id="config-other-deduction-1" class="form-input" 
-                            value="0" min="0" step="1" placeholder="0">
-                        <span class="form-hint">自訂扣款項目</span>
-                    </div>
-
-                    <!-- 其他扣款2 -->
-                    <div class="form-group">
-                        <label class="form-label">其他扣款2</label>
-                        <input type="number" id="config-other-deduction-2" class="form-input" 
-                            value="0" min="0" step="1" placeholder="0">
-                        <span class="form-hint">自訂扣款項目</span>
+                    <div class="calculation-row">
+                        <span>其他扣款</span>
+                        <span class="font-mono">${formatCurrency(data.otherDeductions || 0)}</span>
                     </div>
                     <div class="calculation-row total">
                         <span>實發金額</span>

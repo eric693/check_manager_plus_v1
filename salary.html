@@ -662,16 +662,16 @@
                                         <span id="detail-performance-bonus" class="font-mono">$0</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span data-i18n="SALARY_PROFESSIONAL_ALLOWANCE">專業加給</span>
-                                        <span id="detail-professional-allowance" class="font-mono">$0</span>
+                                        <span>其他津貼1</span>
+                                        <span id="detail-other-allowance-1" class="font-mono">$0</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span data-i18n="SALARY_MANAGERIAL_ALLOWANCE">主管加給</span>
-                                        <span id="detail-managerial-allowance" class="font-mono">$0</span>
+                                        <span>其他津貼2</span>
+                                        <span id="detail-other-allowance-2" class="font-mono">$0</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span data-i18n="SALARY_DUTY_ALLOWANCE">值班津貼</span>
-                                        <span id="detail-duty-allowance" class="font-mono">$0</span>
+                                        <span>其他津貼3</span>
+                                        <span id="detail-other-allowance-3" class="font-mono">$0</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span data-i18n="SALARY_WEEKDAY_OT">平日加班費</span>
@@ -872,30 +872,7 @@
                                     value="0" min="0" step="1" placeholder="0">
                                 <span class="form-hint" data-i18n="HINT_PERFORMANCE_BONUS">依績效考核發放</span>
                             </div>
-                            
-                            <!-- 專業加給 -->
-                            <div class="form-group">
-                                <label class="form-label" data-i18n="SALARY_PROFESSIONAL_ALLOWANCE_LABEL">專業加給</label>
-                                <input type="number" id="config-professional-allowance" class="form-input" 
-                                    value="0" min="0" step="1" placeholder="0">
-                                <span class="form-hint" data-i18n="HINT_PROFESSIONAL_ALLOWANCE">專業技能補助</span>
-                            </div>
-
-                            <!-- 主管加給 -->
-                            <div class="form-group">
-                                <label class="form-label" data-i18n="SALARY_MANAGERIAL_ALLOWANCE_LABEL">主管加給</label>
-                                <input type="number" id="config-managerial-allowance" class="form-input" 
-                                    value="0" min="0" step="1" placeholder="0">
-                                <span class="form-hint" data-i18n="HINT_MANAGERIAL_ALLOWANCE">主管職務津貼</span>
-                            </div>
-
-                            <!-- 值班津貼 -->
-                            <div class="form-group">
-                                <label class="form-label" data-i18n="SALARY_DUTY_ALLOWANCE_LABEL">值班津貼</label>
-                                <input type="number" id="config-duty-allowance" class="form-input" 
-                                    value="0" min="0" step="1" placeholder="0">
-                                <span class="form-hint" data-i18n="HINT_DUTY_ALLOWANCE">值班或待命津貼</span>
-                            </div>
+                        
                             <!-- 其他津貼1 -->
                             <div class="form-group">
                                 <label class="form-label">其他津貼1</label>
@@ -1026,26 +1003,21 @@
                             <span class="form-hint" data-i18n="HINT_GROUP_INSURANCE">團體保險個人分攤</span>
                         </div>
                         
-                        <div class="form-group">
-                            <label class="form-label" data-i18n="SALARY_ACTIVITY_FEE_LABEL">員工活動費</label>
-                            <input type="number" id="config-activity-fee" class="form-input" 
-                                   value="0" min="0" step="1" placeholder="0">
-                            <span class="form-hint" data-i18n="HINT_ACTIVITY_FEE">員工活動或聚會費用</span>
-                        </div>
                         
+                        <!-- 其他扣款1 -->
                         <div class="form-group">
-                            <label class="form-label" data-i18n="SALARY_UNION_FEE_LABEL">工會費</label>
-                            <input type="number" id="config-union-fee" class="form-input" 
-                                   value="0" min="0" step="1" placeholder="0">
-                            <span class="form-hint" data-i18n="HINT_UNION_FEE">工會會費</span>
+                            <label class="form-label">其他扣款1</label>
+                            <input type="number" id="config-other-deduction-1" class="form-input" 
+                                value="0" min="0" step="1" placeholder="0">
+                            <span class="form-hint">自訂扣款項目</span>
                         </div>
 
-                        
+                        <!-- 其他扣款2 -->
                         <div class="form-group">
-                            <label class="form-label" data-i18n="SALARY_OTHER_DEDUCTIONS_LABEL">其他扣款</label>
-                            <input type="number" id="config-other-deductions" class="form-input" 
-                                   value="0" min="0" step="1" placeholder="0">
-                            <span class="form-hint" data-i18n="HINT_OTHER_DEDUCTIONS">其他固定扣款項目</span>
+                            <label class="form-label">其他扣款2</label>
+                            <input type="number" id="config-other-deduction-2" class="form-input" 
+                                value="0" min="0" step="1" placeholder="0">
+                            <span class="form-hint">自訂扣款項目</span>
                         </div>
                     </div>
 
@@ -1518,12 +1490,11 @@
             safeSet('detail-transport-allowance', formatCurrency(data['交通補助'] || 0));
             safeSet('detail-attendance-bonus', formatCurrency(data['全勤獎金'] || 0));
             safeSet('detail-performance-bonus', formatCurrency(data['績效獎金'] || 0));
-
-            // ⭐⭐⭐ 新增：3 個津貼
-            safeSet('detail-professional-allowance', formatCurrency(data['專業加給'] || 0));
-            safeSet('detail-managerial-allowance', formatCurrency(data['主管加給'] || 0));
-            safeSet('detail-duty-allowance', formatCurrency(data['值班津貼'] || 0));
-            
+            // ⭐⭐⭐ 新增：3 個通用津貼
+            safeSet('detail-other-allowance-1', formatCurrency(data['其他津貼1'] || 0));
+            safeSet('detail-other-allowance-2', formatCurrency(data['其他津貼2'] || 0));
+            safeSet('detail-other-allowance-3', formatCurrency(data['其他津貼3'] || 0));
+                        
             safeSet('detail-weekday-overtime', formatCurrency(data['平日加班費']));
             safeSet('detail-restday-overtime', formatCurrency(data['休息日加班費']));
             safeSet('detail-holiday-overtime', formatCurrency(data['國定假日加班費']));
@@ -1618,11 +1589,6 @@
             const transportAllowance = parseFloat(document.getElementById('config-transport-allowance').value) || 0;
             const attendanceBonus = parseFloat(document.getElementById('config-attendance-bonus').value) || 0;
             const performanceBonus = parseFloat(document.getElementById('config-performance-bonus').value) || 0;
-            
-            // ⭐⭐⭐ 新增：3 個津貼
-            const professionalAllowance = parseFloat(document.getElementById('config-professional-allowance').value) || 0;
-            const managerialAllowance = parseFloat(document.getElementById('config-managerial-allowance').value) || 0;
-            const dutyAllowance = parseFloat(document.getElementById('config-duty-allowance').value) || 0;
             
             const otherAllowance1 = parseFloat(document.getElementById('config-other-allowance-1').value) || 0;
             const otherAllowance2 = parseFloat(document.getElementById('config-other-allowance-2').value) || 0;
@@ -2157,9 +2123,7 @@
                     const transportAllowanceEl = document.getElementById('config-transport-allowance');
                     const attendanceBonusEl = document.getElementById('config-attendance-bonus');
                     const performanceBonusEl = document.getElementById('config-performance-bonus');
-                    const professionalAllowanceEl = document.getElementById('config-professional-allowance');
-                    const managerialAllowanceEl = document.getElementById('config-managerial-allowance');
-                    const dutyAllowanceEl = document.getElementById('config-duty-allowance');
+                  
                     const otherAllowance1El = document.getElementById('config-other-allowance-1');
                     const otherAllowance2El = document.getElementById('config-other-allowance-2');
                     const otherAllowance3El = document.getElementById('config-other-allowance-3');
@@ -2169,9 +2133,6 @@
                     if (transportAllowanceEl) transportAllowanceEl.value = data['交通補助'] || 0;
                     if (attendanceBonusEl) attendanceBonusEl.value = data['全勤獎金'] || 0;
                     if (performanceBonusEl) performanceBonusEl.value = data['績效獎金'] || 0;
-                    if (professionalAllowanceEl) professionalAllowanceEl.value = data['專業加給'] || 0;  // ✅ 改用中文
-                    if (managerialAllowanceEl) managerialAllowanceEl.value = data['主管加給'] || 0;      // ✅ 改用中文
-                    if (dutyAllowanceEl) dutyAllowanceEl.value = data['值班津貼'] || 0;                  // ✅ 改用中文
                     if (otherAllowance1El) otherAllowance1El.value = data['其他津貼1'] || 0;
                     if (otherAllowance2El) otherAllowance2El.value = data['其他津貼2'] || 0;
                     if (otherAllowance3El) otherAllowance3El.value = data['其他津貼3'] || 0;
@@ -2192,8 +2153,6 @@
                     const welfareFeeEl = document.getElementById('config-welfare-fee');
                     const dormitoryFeeEl = document.getElementById('config-dormitory-fee');
                     const groupInsuranceEl = document.getElementById('config-group-insurance');
-                    const activityFeeEl = document.getElementById('config-activity-fee');
-                    const unionFeeEl = document.getElementById('config-union-fee');
                     const otherDeduction1El = document.getElementById('config-other-deduction-1');
                     const otherDeduction2El = document.getElementById('config-other-deduction-2');
 
@@ -2202,8 +2161,7 @@
                     if (welfareFeeEl) welfareFeeEl.value = data['福利金扣款'] || 0;
                     if (dormitoryFeeEl) dormitoryFeeEl.value = data['宿舍費用'] || 0;
                     if (groupInsuranceEl) groupInsuranceEl.value = data['團保費用'] || 0;
-                    if (activityFeeEl) activityFeeEl.value = data['員工活動費'] || 0;      // ✅ 改用中文
-                    if (unionFeeEl) unionFeeEl.value = data['工會費'] || 0;                // ✅ 改用中文
+
                     if (otherDeduction1El) otherDeduction1El.value = data['其他扣款1'] || 0;
                     if (otherDeduction2El) otherDeduction2El.value = data['其他扣款2'] || 0;
                                         
