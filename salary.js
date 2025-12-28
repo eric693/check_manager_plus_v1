@@ -457,11 +457,11 @@ function displayEmployeeSalary(data) {
         (parseFloat(data['福利金扣款']) || 0) +
         (parseFloat(data['宿舍費用']) || 0) +
         (parseFloat(data['團保費用']) || 0) +
-        (parseFloat(data['其他扣款']) || 0);
+        (parseFloat(data['其他扣款1']) || 0) +  
+        (parseFloat(data['其他扣款2']) || 0);   
     
     safeSet('total-deductions', formatCurrency(deductions));
     
-    // ⭐⭐⭐ 應發項目（時薪 vs 月薪顯示不同）
     if (isHourly) {
         // 時薪顯示方式
         const hourlyRate = parseFloat(data['時薪']) || 0;
@@ -606,7 +606,8 @@ function displayEmployeeSalary(data) {
         (parseFloat(data['福利金扣款']) || 0) +
         (parseFloat(data['宿舍費用']) || 0) +
         (parseFloat(data['團保費用']) || 0) +
-        (parseFloat(data['其他扣款']) || 0);
+        (parseFloat(data['其他扣款1']) || 0) +  
+        (parseFloat(data['其他扣款2']) || 0);   
     safeSet('detail-other-deductions', formatCurrency(otherDeductions));
     
     // 銀行資訊

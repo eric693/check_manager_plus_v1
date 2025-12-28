@@ -1479,7 +1479,8 @@
                 (parseFloat(data['福利金']) || 0) +
                 (parseFloat(data['宿舍費用']) || 0) +
                 (parseFloat(data['團保費用']) || 0) +
-                (parseFloat(data['其他扣款']) || 0);
+                (parseFloat(data['其他扣款1']) || 0) +  // ⭐ 新增
+                (parseFloat(data['其他扣款2']) || 0);   // ⭐ 新增
             
             safeSet('total-deductions', formatCurrency(deductions));
             
