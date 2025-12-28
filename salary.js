@@ -764,7 +764,10 @@ async function handleSalaryConfigSubmit(e) {
     const transportAllowance = safeGetValue('config-transport-allowance') || '0';
     const attendanceBonus = safeGetValue('config-attendance-bonus') || '0';
     const performanceBonus = safeGetValue('config-performance-bonus') || '0';
-    const otherAllowances = safeGetValue('config-other-allowances') || '0';
+    const otherAllowance1 = safeGetValue('config-other-allowance-1') || '0';  // ⭐ 改名
+    const otherAllowance2 = safeGetValue('config-other-allowance-2') || '0';  // ⭐ 改名
+    const otherAllowance3 = safeGetValue('config-other-allowance-3') || '0';  // ⭐ 改名
+
     
     // 法定扣款
     const laborFee = safeGetValue('config-labor-fee') || '0';
@@ -778,7 +781,9 @@ async function handleSalaryConfigSubmit(e) {
     const welfareFee = safeGetValue('config-welfare-fee') || '0';
     const dormitoryFee = safeGetValue('config-dormitory-fee') || '0';
     const groupInsurance = safeGetValue('config-group-insurance') || '0';
-    const otherDeductions = safeGetValue('config-other-deductions') || '0';
+    const otherDeduction1 = safeGetValue('config-other-deduction-1') || '0';  // ⭐ 改名
+    const otherDeduction2 = safeGetValue('config-other-deduction-2') || '0';  // ⭐ 改名
+
     
     // 其他資訊
     const bankCodeRaw = document.getElementById('config-bank-code').value;
@@ -819,7 +824,9 @@ async function handleSalaryConfigSubmit(e) {
             `&transportAllowance=${encodeURIComponent(transportAllowance)}` +
             `&attendanceBonus=${encodeURIComponent(attendanceBonus)}` +
             `&performanceBonus=${encodeURIComponent(performanceBonus)}` +
-            `&otherAllowances=${encodeURIComponent(otherAllowances)}` +
+            `&otherAllowance1=${encodeURIComponent(otherAllowance1)}` +  // ⭐ 改名
+            `&otherAllowance2=${encodeURIComponent(otherAllowance2)}` +  // ⭐ 改名
+            `&otherAllowance3=${encodeURIComponent(otherAllowance3)}` +  // ⭐ 改名
             
             // 銀行資訊 (4個參數)
             `&bankCode=${encodeURIComponent(bankCode)}` +
@@ -839,7 +846,8 @@ async function handleSalaryConfigSubmit(e) {
             `&welfareFee=${encodeURIComponent(welfareFee)}` +
             `&dormitoryFee=${encodeURIComponent(dormitoryFee)}` +
             `&groupInsurance=${encodeURIComponent(groupInsurance)}` +
-            `&otherDeductions=${encodeURIComponent(otherDeductions)}` +
+            `&otherDeduction1=${encodeURIComponent(otherDeduction1)}` +  // ⭐ 改名
+            `&otherDeduction2=${encodeURIComponent(otherDeduction2)}` +  // ⭐ 改名
             
             // 備註
             `&note=${encodeURIComponent(note)}`;
@@ -859,11 +867,14 @@ async function handleSalaryConfigSubmit(e) {
                 'config-transport-allowance',
                 'config-attendance-bonus',
                 'config-performance-bonus',
-                'config-other-allowances',
+                'config-other-allowance-1',   // ⭐ 改名
+                'config-other-allowance-2',   // ⭐ 改名
+                'config-other-allowance-3',   // ⭐ 改名
                 'config-welfare-fee',
                 'config-dormitory-fee',
                 'config-group-insurance',
-                'config-other-deductions',
+                'config-other-deduction-1',   // ⭐ 改名
+                'config-other-deduction-2',   // ⭐ 改名
                 'config-labor-fee',
                 'config-health-fee',
                 'config-employment-fee',
@@ -1163,9 +1174,20 @@ function displaySalaryCalculation(data, container) {
                         <span>團保費用</span>
                         <span class="font-mono">${formatCurrency(data.groupInsurance || 0)}</span>
                     </div>
-                    <div class="calculation-row">
-                        <span>其他扣款</span>
-                        <span class="font-mono">${formatCurrency(data.otherDeductions || 0)}</span>
+                    <!-- 其他扣款1 -->
+                    <div class="form-group">
+                        <label class="form-label">其他扣款1</label>
+                        <input type="number" id="config-other-deduction-1" class="form-input" 
+                            value="0" min="0" step="1" placeholder="0">
+                        <span class="form-hint">自訂扣款項目</span>
+                    </div>
+
+                    <!-- 其他扣款2 -->
+                    <div class="form-group">
+                        <label class="form-label">其他扣款2</label>
+                        <input type="number" id="config-other-deduction-2" class="form-input" 
+                            value="0" min="0" step="1" placeholder="0">
+                        <span class="form-hint">自訂扣款項目</span>
                     </div>
                     <div class="calculation-row total">
                         <span>實發金額</span>

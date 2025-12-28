@@ -896,12 +896,28 @@
                                     value="0" min="0" step="1" placeholder="0">
                                 <span class="form-hint" data-i18n="HINT_DUTY_ALLOWANCE">值班或待命津貼</span>
                             </div>
-                            <!-- 其他津貼 -->
+                            <!-- 其他津貼1 -->
                             <div class="form-group">
-                                <label class="form-label" data-i18n="SALARY_OTHER_ALLOWANCES_LABEL">其他津貼</label>
-                                <input type="number" id="config-other-allowances" class="form-input" 
+                                <label class="form-label">其他津貼1</label>
+                                <input type="number" id="config-other-allowance-1" class="form-input" 
                                     value="0" min="0" step="1" placeholder="0">
-                                <span class="form-hint" data-i18n="HINT_OTHER_ALLOWANCES">其他固定津貼項目</span>
+                                <span class="form-hint">自訂津貼項目</span>
+                            </div>
+
+                            <!-- 其他津貼2 -->
+                            <div class="form-group">
+                                <label class="form-label">其他津貼2</label>
+                                <input type="number" id="config-other-allowance-2" class="form-input" 
+                                    value="0" min="0" step="1" placeholder="0">
+                                <span class="form-hint">自訂津貼項目</span>
+                            </div>
+
+                            <!-- 其他津貼3 -->
+                            <div class="form-group">
+                                <label class="form-label">其他津貼3</label>
+                                <input type="number" id="config-other-allowance-3" class="form-input" 
+                                    value="0" min="0" step="1" placeholder="0">
+                                <span class="form-hint">自訂津貼項目</span>
                             </div>
                         </div>
                     </div>
@@ -1572,16 +1588,14 @@
                 'config-transport-allowance',
                 'config-attendance-bonus',
                 'config-performance-bonus',
-                'config-professional-allowance',    // ⭐ 新增
-                'config-managerial-allowance',      // ⭐ 新增
-                'config-duty-allowance',            // ⭐ 新增
-                'config-other-allowances',
+                'config-other-allowance-1',    // ⭐ 改名
+                'config-other-allowance-2',    // ⭐ 改名
+                'config-other-allowance-3',    // ⭐ 改名
                 'config-welfare-fee',
                 'config-dormitory-fee',
                 'config-group-insurance',
-                'config-activity-fee',              // ⭐ 新增
-                'config-union-fee',                 // ⭐ 新增
-                'config-other-deductions'
+                'config-other-deduction-1',    // ⭐ 改名
+                'config-other-deduction-2'     // ⭐ 改名
             ];
             
             inputs.forEach(id => {
@@ -1610,7 +1624,10 @@
             const managerialAllowance = parseFloat(document.getElementById('config-managerial-allowance').value) || 0;
             const dutyAllowance = parseFloat(document.getElementById('config-duty-allowance').value) || 0;
             
-            const otherAllowances = parseFloat(document.getElementById('config-other-allowances').value) || 0;
+            const otherAllowance1 = parseFloat(document.getElementById('config-other-allowance-1').value) || 0;
+            const otherAllowance2 = parseFloat(document.getElementById('config-other-allowance-2').value) || 0;
+            const otherAllowance3 = parseFloat(document.getElementById('config-other-allowance-3').value) || 0;
+
             
             // 現有扣款
             const welfareFee = parseFloat(document.getElementById('config-welfare-fee').value) || 0;
@@ -1618,11 +1635,12 @@
             const groupInsurance = parseFloat(document.getElementById('config-group-insurance').value) || 0;
             
             // ⭐⭐⭐ 新增：2 個扣款
-            const activityFee = parseFloat(document.getElementById('config-activity-fee').value) || 0;
-            const unionFee = parseFloat(document.getElementById('config-union-fee').value) || 0;
+            // const activityFee = parseFloat(document.getElementById('config-activity-fee').value) || 0;
+            // const unionFee = parseFloat(document.getElementById('config-union-fee').value) || 0;
             
-            const otherDeductions = parseFloat(document.getElementById('config-other-deductions').value) || 0;
-            
+            const otherDeduction1 = parseFloat(document.getElementById('config-other-deduction-1').value) || 0;
+            const otherDeduction2 = parseFloat(document.getElementById('config-other-deduction-2').value) || 0;
+
             if (baseSalary <= 0) {
                 setCalculatedValues(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
                 return;
@@ -1630,9 +1648,9 @@
             
             // ⭐⭐⭐ 更新：津貼總額包含新欄位
             const allowancesTotal = positionAllowance + mealAllowance + transportAllowance + 
-                                attendanceBonus + performanceBonus + 
-                                professionalAllowance + managerialAllowance + dutyAllowance +  // ⭐ 新增
-                                otherAllowances;
+                    attendanceBonus + performanceBonus + 
+                    otherAllowance1 + otherAllowance2 + otherAllowance3;  // ⭐ 改用新名稱
+
             
             const insuredSalary = getInsuredSalary(baseSalary);
             const laborFee = Math.round(insuredSalary * 0.115 * 0.2);
@@ -1650,8 +1668,7 @@
             
             // ⭐⭐⭐ 更新：其他扣款總額包含新欄位
             const otherDeductionsTotal = welfareFee + dormitoryFee + groupInsurance + 
-                                        activityFee + unionFee +  // ⭐ 新增
-                                        otherDeductions;
+                            otherDeduction1 + otherDeduction2;  // ⭐ 改用新名稱
             
             const totalDeductions = legalDeductions + otherDeductionsTotal;
             const netSalary = baseSalary + allowancesTotal - totalDeductions;
@@ -2143,8 +2160,10 @@
                     const professionalAllowanceEl = document.getElementById('config-professional-allowance');
                     const managerialAllowanceEl = document.getElementById('config-managerial-allowance');
                     const dutyAllowanceEl = document.getElementById('config-duty-allowance');
-                    const otherAllowancesEl = document.getElementById('config-other-allowances');
-                    
+                    const otherAllowance1El = document.getElementById('config-other-allowance-1');
+                    const otherAllowance2El = document.getElementById('config-other-allowance-2');
+                    const otherAllowance3El = document.getElementById('config-other-allowance-3');
+                                        
                     if (positionAllowanceEl) positionAllowanceEl.value = data['職務加給'] || 0;
                     if (mealAllowanceEl) mealAllowanceEl.value = data['伙食費'] || 0;
                     if (transportAllowanceEl) transportAllowanceEl.value = data['交通補助'] || 0;
@@ -2153,8 +2172,10 @@
                     if (professionalAllowanceEl) professionalAllowanceEl.value = data['專業加給'] || 0;  // ✅ 改用中文
                     if (managerialAllowanceEl) managerialAllowanceEl.value = data['主管加給'] || 0;      // ✅ 改用中文
                     if (dutyAllowanceEl) dutyAllowanceEl.value = data['值班津貼'] || 0;                  // ✅ 改用中文
-                    if (otherAllowancesEl) otherAllowancesEl.value = data['其他津貼'] || 0;
-                    
+                    if (otherAllowance1El) otherAllowance1El.value = data['其他津貼1'] || 0;
+                    if (otherAllowance2El) otherAllowance2El.value = data['其他津貼2'] || 0;
+                    if (otherAllowance3El) otherAllowance3El.value = data['其他津貼3'] || 0;
+                                        
                     // 銀行資訊
                     const bankCodeEl = document.getElementById('config-bank-code');
                     const bankAccountEl = document.getElementById('config-bank-account');
@@ -2173,7 +2194,9 @@
                     const groupInsuranceEl = document.getElementById('config-group-insurance');
                     const activityFeeEl = document.getElementById('config-activity-fee');
                     const unionFeeEl = document.getElementById('config-union-fee');
-                    const otherDeductionsEl = document.getElementById('config-other-deductions');
+                    const otherDeduction1El = document.getElementById('config-other-deduction-1');
+                    const otherDeduction2El = document.getElementById('config-other-deduction-2');
+
                     
                     if (pensionRateEl) pensionRateEl.value = data['勞退自提率(%)'] || 0;
                     if (welfareFeeEl) welfareFeeEl.value = data['福利金扣款'] || 0;
@@ -2181,8 +2204,9 @@
                     if (groupInsuranceEl) groupInsuranceEl.value = data['團保費用'] || 0;
                     if (activityFeeEl) activityFeeEl.value = data['員工活動費'] || 0;      // ✅ 改用中文
                     if (unionFeeEl) unionFeeEl.value = data['工會費'] || 0;                // ✅ 改用中文
-                    if (otherDeductionsEl) otherDeductionsEl.value = data['其他扣款'] || 0;
-                    
+                    if (otherDeduction1El) otherDeduction1El.value = data['其他扣款1'] || 0;
+                    if (otherDeduction2El) otherDeduction2El.value = data['其他扣款2'] || 0;
+                                        
                     // 備註
                     const noteEl = document.getElementById('config-note');
                     if (noteEl) noteEl.value = data['備註'] || '';
