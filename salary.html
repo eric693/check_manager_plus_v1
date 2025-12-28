@@ -720,9 +720,26 @@
                                         <span data-i18n="SALARY_LEAVE_DEDUCT">請假扣款</span>
                                         <span id="detail-leave-deduction" class="font-mono">$0</span>
                                     </div>
+                                    <!-- ⭐⭐⭐ 新增：5 個扣款項目分別顯示 -->
                                     <div class="flex justify-between">
-                                        <span data-i18n="SALARY_OTHER_DEDUCT">其他扣款</span>
-                                        <span id="detail-other-deductions" class="font-mono">$0</span>
+                                        <span>福利金扣款</span>
+                                        <span id="detail-welfare-deduction" class="font-mono">$0</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>宿舍費用</span>
+                                        <span id="detail-dormitory-deduction" class="font-mono">$0</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>團保費用</span>
+                                        <span id="detail-group-insurance-deduction" class="font-mono">$0</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>其他扣款1</span>
+                                        <span id="detail-other-deduction-1" class="font-mono">$0</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>其他扣款2</span>
+                                        <span id="detail-other-deduction-2" class="font-mono">$0</span>
                                     </div>
                                 </div>
                             </div>
@@ -1513,15 +1530,13 @@
             safeSet('detail-income-tax', formatCurrency(data['所得稅']));
             safeSet('detail-leave-deduction', formatCurrency(data['請假扣款']));
             
-            const otherDeductions = 
-                (parseFloat(data['福利金扣款']) || 0) +
-                (parseFloat(data['宿舍費用']) || 0) +
-                (parseFloat(data['團保費用']) || 0) +
 
-                (parseFloat(data['其他扣款1']) || 0) +  // ⭐ 改名
-                (parseFloat(data['其他扣款2']) || 0);   // ⭐ 改名
-            safeSet('detail-other-deductions', formatCurrency(otherDeductions));
-            
+            // safeSet('detail-other-deductions', formatCurrency(otherDeductions));
+            safeSet('detail-welfare-deduction', formatCurrency(data['福利金扣款'] || 0));
+            safeSet('detail-dormitory-deduction', formatCurrency(data['宿舍費用'] || 0));
+            safeSet('detail-group-insurance-deduction', formatCurrency(data['團保費用'] || 0));
+            safeSet('detail-other-deduction-1', formatCurrency(data['其他扣款1'] || 0));
+            safeSet('detail-other-deduction-2', formatCurrency(data['其他扣款2'] || 0));
             // 銀行資訊
             const bankCode = data['銀行代碼'];
             const bankAccount = data['銀行帳號'];
