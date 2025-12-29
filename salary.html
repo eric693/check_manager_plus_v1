@@ -525,6 +525,61 @@
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         }
 
+        /* ⭐⭐⭐ 在這裡加入 Windows 下拉選單修正 ⭐⭐⭐ */
+        /* ==================== 修正 Windows 下拉選單顯示問題 ==================== */
+        select.form-select,
+        #config-employee-select,
+        #calc-employee-select,
+        #hourly-employee-select {
+            background-color: rgba(30, 41, 59, 0.8) !important;
+            color: #ffffff !important;
+        }
+
+        /* 修正所有下拉選單的選項顯示 */
+        select.form-select option,
+        #config-employee-select option,
+        #calc-employee-select option,
+        #hourly-employee-select option {
+            background-color: #1e293b !important;
+            color: #ffffff !important;
+            padding: 8px 12px !important;
+            font-size: 1rem !important;
+        }
+
+        /* 選項懸停效果 */
+        select.form-select option:hover,
+        #config-employee-select option:hover,
+        #calc-employee-select option:hover,
+        #hourly-employee-select option:hover {
+            background-color: #334155 !important;
+        }
+
+        /* 選中的選項 */
+        select.form-select option:checked,
+        #config-employee-select option:checked,
+        #calc-employee-select option:checked,
+        #hourly-employee-select option:checked {
+            background-color: #10b981 !important;
+            font-weight: 600 !important;
+        }
+
+        /* 確保下拉選單本身可見 */
+        select.form-select,
+        #config-employee-select,
+        #calc-employee-select,
+        #hourly-employee-select {
+            background-color: rgba(30, 41, 59, 0.8) !important;
+            color: #ffffff !important;
+        }
+
+        /* 針對 Windows Edge/Chrome 的特殊處理 */
+        @supports (-ms-ime-align: auto) {
+            select option {
+                background-color: #1e293b;
+                color: #ffffff;
+            }
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -543,7 +598,9 @@
             .month-selector {
                 flex-direction: column;
             }
+
         }
+
     </style>
 </head>
 <body>
