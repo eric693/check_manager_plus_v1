@@ -94,7 +94,7 @@ async function refreshLeaveData() {
 }
 
 /**
- * ✅ 修正版：計算工作時數（請假專用 - 與後端一致）
+ * ✅ 完全修正版：計算工作時數（09:00-18:00，扣除 12:00-13:00）
  */
 function calculateWorkHours(startTime, endTime) {
     if (!startTime || !endTime) {
@@ -121,56 +121,132 @@ function calculateWorkHours(startTime, endTime) {
         end: end.toISOString()
     });
     
-    // ⭐⭐⭐ 關鍵修正：計算跨越的日曆天數
+    // ⭐ 工作時間設定
+    const WORK_START_HOUR = 9;      // 上班 09:00
+    const WORK_END_HOUR = 18;       // 下班 18:00
+    const LUNCH_START = 12;         // 午休開始 12:00
+    const LUNCH_END = 13;           // 午休結束 13:00
+    const DAILY_WORK_HOURS = 8;     // 每日工作時數（已扣午休）
+    
+    // 判斷是否同一天
     const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
     const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-    const daysDiff = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    const isSameDay = startDate.getTime() === endDate.getTime();
     
-    console.log(`   跨越天數: ${daysDiff} 天`);
-    
-    // 1️⃣ 如果是同一天
-    if (daysDiff === 1) {
+    // 1️⃣ 同一天請假
+    if (isSameDay) {
         console.log('   ℹ️ 同日請假');
         
-        // 計算實際請假時數
-        const totalMs = end - start;
-        let totalHours = totalMs / (1000 * 60 * 60);
+        // ⭐ 限制在工作時間內
+        const startHour = Math.max(
+            start.getHours() + start.getMinutes() / 60,
+            WORK_START_HOUR
+        );
+        const endHour = Math.min(
+            end.getHours() + end.getMinutes() / 60,
+            WORK_END_HOUR
+        );
         
-        // 檢查是否跨越午休時間 12:00-13:00
-        const startHour = start.getHours() + start.getMinutes() / 60;
-        const endHour = end.getHours() + end.getMinutes() / 60;
+        if (startHour >= endHour) {
+            console.log('   ⚠️ 請假時間不在工作時段內');
+            return 0;
+        }
         
-        const lunchStart = 12;
-        const lunchEnd = 13;
+        let workHours = endHour - startHour;
         
-        if (startHour < lunchEnd && endHour > lunchStart) {
-            const overlapStart = Math.max(startHour, lunchStart);
-            const overlapEnd = Math.min(endHour, lunchEnd);
-            const lunchOverlap = Math.max(0, overlapEnd - overlapStart);
-            totalHours -= lunchOverlap;
+        // 扣除午休時間（如果跨越）
+        if (startHour < LUNCH_END && endHour > LUNCH_START) {
+            const lunchOverlapStart = Math.max(startHour, LUNCH_START);
+            const lunchOverlapEnd = Math.min(endHour, LUNCH_END);
+            const lunchOverlap = Math.max(0, lunchOverlapEnd - lunchOverlapStart);
+            workHours -= lunchOverlap;
             
             console.log(`   🍱 扣除午休時間: ${lunchOverlap.toFixed(2)} 小時`);
         }
         
-        totalHours = Math.max(0, totalHours);
-        const finalHours = Math.round(totalHours * 100) / 100;
+        workHours = Math.max(0, workHours);
+        const finalHours = Math.round(workHours * 100) / 100;
         
         console.log(`   ✅ 同日請假工時: ${finalHours} 小時`);
         
         return finalHours;
     }
     
-    // 2️⃣ 如果是跨日請假（⭐ 核心修正）
+    // 2️⃣ 跨日請假 - 分段精確計算
     else {
         console.log('   ℹ️ 跨日請假');
         
-        // ⭐⭐⭐ 修正：直接用天數計算，不計算總時長
-        // 標準：1 天 = 8 小時工作時數（已扣除午休）
-        const workHours = daysDiff * 8;
+        let totalWorkHours = 0;
         
-        console.log(`   ✅ 跨日請假工時: ${daysDiff} 天 × 8 小時 = ${workHours} 小時`);
+        // 🔹 第一天：從請假開始到當天下班
+        // ⭐ 修正：限制開始時間不早於上班時間
+        const firstDayStartHour = Math.max(
+            start.getHours() + start.getMinutes() / 60,
+            WORK_START_HOUR
+        );
         
-        return workHours;
+        // ⭐ 修正：確保不晚於下班時間
+        const firstDayEndHour = WORK_END_HOUR;
+        
+        let firstDayHours = Math.max(0, firstDayEndHour - firstDayStartHour);
+        
+        // 扣除第一天的午休
+        if (firstDayStartHour < LUNCH_END && firstDayEndHour > LUNCH_START) {
+            const lunchStart = Math.max(firstDayStartHour, LUNCH_START);
+            const lunchEnd = Math.min(firstDayEndHour, LUNCH_END);
+            const lunchOverlap = Math.max(0, lunchEnd - lunchStart);
+            firstDayHours -= lunchOverlap;
+        }
+        
+        firstDayHours = Math.max(0, firstDayHours);
+        totalWorkHours += firstDayHours;
+        
+        console.log(`   📅 第一天 (${start.toLocaleDateString()}): ${firstDayHours.toFixed(2)} 小時`);
+        
+        // 🔹 中間完整工作日
+        const daysDiff = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff > 1) {
+            const middleDays = daysDiff - 1;
+            const middleHours = middleDays * DAILY_WORK_HOURS;
+            totalWorkHours += middleHours;
+            
+            console.log(`   📅 中間完整工作日 (${middleDays} 天): ${middleHours} 小時`);
+        }
+        
+        // 🔹 最後一天：從上班到請假結束
+        // ⭐ 修正：限制結束時間不早於上班時間、不晚於下班時間
+        const lastDayEndHour = Math.min(
+            Math.max(
+                end.getHours() + end.getMinutes() / 60,
+                WORK_START_HOUR  // ⭐ 不早於上班時間
+            ),
+            WORK_END_HOUR
+        );
+        
+        const lastDayStartHour = WORK_START_HOUR;
+        
+        let lastDayHours = Math.max(0, lastDayEndHour - lastDayStartHour);
+        
+        // 扣除最後一天的午休
+        if (lastDayStartHour < LUNCH_END && lastDayEndHour > LUNCH_START) {
+            const lunchStart = Math.max(lastDayStartHour, LUNCH_START);
+            const lunchEnd = Math.min(lastDayEndHour, LUNCH_END);
+            const lunchOverlap = Math.max(0, lunchEnd - lunchStart);
+            lastDayHours -= lunchOverlap;
+        }
+        
+        lastDayHours = Math.max(0, lastDayHours);
+        totalWorkHours += lastDayHours;
+        
+        console.log(`   📅 最後一天 (${end.toLocaleDateString()}): ${lastDayHours.toFixed(2)} 小時`);
+        
+        // 四捨五入到小數點後 2 位
+        const finalHours = Math.round(totalWorkHours * 100) / 100;
+        
+        console.log(`   ✅ 跨日請假總工時: ${finalHours} 小時`);
+        
+        return finalHours;
     }
 }
 /**
@@ -434,6 +510,20 @@ function validateLeaveForm() {
         return false;
     }
     
+    // ⭐⭐⭐ 新增：檢查是否為整點時間
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    
+    if (start.getMinutes() !== 0 || start.getSeconds() !== 0) {
+        showNotification('開始時間必須是整點（例如：09:00, 10:00）', 'error');
+        return false;
+    }
+    
+    if (end.getMinutes() !== 0 || end.getSeconds() !== 0) {
+        showNotification('結束時間必須是整點（例如：09:00, 10:00）', 'error');
+        return false;
+    }
+    
     if (!reason.trim() || reason.trim().length < 2) {
         showNotification('請填寫請假原因（至少2個字）', 'error');
         return false;
@@ -451,10 +541,12 @@ function validateLeaveForm() {
         return false;
     }
     
-    const start = new Date(startTime);
-    const end = new Date(endTime);
+    // ⭐ 修正：使用已創建的 start 和 end 變數
+    const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+    const isSameDay = startDate.getTime() === endDate.getTime();
     
-    if (start.toDateString() === end.toDateString() && workHours > 8) {
+    if (isSameDay && workHours > 8) {
         showNotification('單日請假不能超過 8 小時（已扣除午休）', 'error');
         return false;
     }

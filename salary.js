@@ -758,7 +758,7 @@ async function handleSalaryConfigSubmit(e) {
     const employeeType = safeGetValue('config-employee-type');   // ⭐ 加入
     const salaryType = safeGetValue('config-salary-type');       // ⭐ 加入
     const baseSalary = safeGetValue('config-base-salary');
-    
+    const workTimeType = safeGetValue('config-work-time-type');  // ⭐⭐⭐ 新增這行
     // ⭐ 固定津貼（6項）
     const positionAllowance = safeGetValue('config-position-allowance') || '0';
     const mealAllowance = safeGetValue('config-meal-allowance') || '0';
@@ -817,6 +817,7 @@ async function handleSalaryConfigSubmit(e) {
             `&idNumber=${encodeURIComponent(idNumber)}` +                    // ⭐ 新增
             `&employeeType=${encodeURIComponent(employeeType)}` +            // ⭐ 新增
             `&salaryType=${encodeURIComponent(salaryType)}` +                // ⭐ 新增
+            `&workTimeType=${encodeURIComponent(workTimeType)}` +      
             `&baseSalary=${encodeURIComponent(baseSalary)}` +
             
             // 固定津貼 (6個參數)
@@ -1827,3 +1828,146 @@ console.log('✅ 薪資匯出功能已載入（管理員專用）');
 
 console.log('✅ 薪資管理系統（完整版 v2.0）JS 已載入');
 console.log('📋 包含：基本薪資 + 6項津貼 + 10項扣款');
+
+/**
+ * ⭐ 員工類型改變時的處理函數
+ */
+function onEmployeeTypeChange() {
+    const employeeType = document.getElementById('config-employee-type').value;
+    const salaryTypeEl = document.getElementById('config-salary-type');
+    const workTimeTypeEl = document.getElementById('config-work-time-type');
+    
+    if (!employeeType) {
+        // 未選擇員工類型
+        salaryTypeEl.value = '';
+        workTimeTypeEl.value = '';
+        workTimeTypeEl.disabled = true;
+        return;
+    }
+    
+    // 根據員工類型自動設定
+    switch (employeeType) {
+        case '月薪制-不定時':
+            // 飼料廠司機
+            salaryTypeEl.value = '月薪';
+            workTimeTypeEl.value = '不定時';
+            workTimeTypeEl.disabled = true;
+            
+            // 自動填入津貼
+            setSuggestedAllowances({
+                position: 5000,
+                meal: 3000,
+                attendance: 1000
+            });
+            break;
+            
+        case '時薪制-標準':
+            // 食品廠移工
+            salaryTypeEl.value = '時薪';
+            workTimeTypeEl.value = '標準工時';
+            workTimeTypeEl.disabled = true;
+            
+            // 自動填入扣款
+            setSuggestedDeductions({
+                dormitory: 1500,
+                meal: 3000,
+                other1: 2000  // 就業安定費
+            });
+            break;
+            
+        case '月薪制-標準':
+            // 管理部行政
+            salaryTypeEl.value = '月薪';
+            workTimeTypeEl.value = '標準工時';
+            workTimeTypeEl.disabled = true;
+            
+            // 自動填入津貼
+            setSuggestedAllowances({
+                meal: 2400
+            });
+            break;
+            
+        default:
+            salaryTypeEl.value = '';
+            workTimeTypeEl.value = '';
+            workTimeTypeEl.disabled = true;
+    }
+    
+    console.log('✅ 員工類型已切換:', employeeType);
+    console.log('   薪資類型:', salaryTypeEl.value);
+    console.log('   工時類型:', workTimeTypeEl.value);
+}
+
+/**
+ * ⭐ 自動填入建議津貼
+ */
+function setSuggestedAllowances(allowances) {
+    const fields = {
+        position: 'config-position-allowance',
+        meal: 'config-meal-allowance',
+        transport: 'config-transport-allowance',
+        attendance: 'config-attendance-bonus',
+        performance: 'config-performance-bonus'
+    };
+    
+    // 先清空所有津貼
+    Object.values(fields).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '0';
+    });
+    
+    // 填入建議值
+    Object.entries(allowances).forEach(([key, value]) => {
+        const fieldId = fields[key];
+        if (fieldId) {
+            const el = document.getElementById(fieldId);
+            if (el) {
+                el.value = value;
+                console.log(`  設定 ${key}: ${value}`);
+            }
+        }
+    });
+}
+
+/**
+ * ⭐ 自動填入建議扣款
+ */
+function setSuggestedDeductions(deductions) {
+    const fields = {
+        welfare: 'config-welfare-fee',
+        dormitory: 'config-dormitory-fee',
+        group: 'config-group-insurance',
+        meal: 'config-meal-allowance',  // 移工的伙食費是扣款
+        other1: 'config-other-deduction-1',
+        other2: 'config-other-deduction-2'
+    };
+    
+    // 先清空所有扣款
+    Object.values(fields).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '0';
+    });
+    
+    // 填入建議值
+    Object.entries(deductions).forEach(([key, value]) => {
+        const fieldId = fields[key];
+        if (fieldId) {
+            const el = document.getElementById(fieldId);
+            if (el) {
+                el.value = value;
+                console.log(`  設定 ${key}: ${value}`);
+            }
+        }
+    });
+    
+    // 特殊處理：移工的伙食費要清空津貼、設定扣款
+    if (deductions.meal) {
+        const mealAllowanceEl = document.getElementById('config-meal-allowance');
+        if (mealAllowanceEl) {
+            mealAllowanceEl.value = '0';
+            console.log('  清空伙食費津貼（改為扣款）');
+        }
+    }
+}
+
+console.log('✅ 員工類型切換功能已載入');
