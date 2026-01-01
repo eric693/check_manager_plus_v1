@@ -742,6 +742,14 @@
                                         <span data-i18n="SALARY_HOLIDAY_OT">國定假日加班費</span>
                                         <span id="detail-holiday-overtime" class="font-mono">$0</span>
                                     </div>
+                                    <div class="flex justify-between">
+                                        <span>未休假補薪</span>
+                                        <span id="detail-unused-leave-pay" class="font-mono">$0</span>
+                                    </div>
+                                    <div class="flex justify-between text-xs text-gray-400">
+                                        <span>（特休未休天數）</span>
+                                        <span id="detail-unused-leave-days" class="font-mono">0 天</span>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -773,9 +781,37 @@
                                         <span data-i18n="SALARY_TAX">所得稅</span>
                                         <span id="detail-income-tax" class="font-mono">$0</span>
                                     </div>
-                                    <div class="flex justify-between">
+                                    <!-- <div class="flex justify-between">
                                         <span data-i18n="SALARY_LEAVE_DEDUCT">請假扣款</span>
                                         <span id="detail-leave-deduction" class="font-mono">$0</span>
+                                    </div> -->
+                                    <!-- 請假扣款總計（可折疊） -->
+                                    <div class="flex justify-between cursor-pointer" onclick="toggleLeaveDeductionDetail()">
+                                        <span data-i18n="SALARY_LEAVE_DEDUCT">請假扣款</span>
+                                        <div>
+                                            <span id="detail-leave-deduction" class="font-mono">$0</span>
+                                            <span id="leave-deduction-toggle" class="ml-2 text-xs">▼</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- 請假扣款明細（預設隱藏） -->
+                                    <div id="leave-deduction-detail" class="ml-4 mt-2 space-y-1 text-xs" style="display: none;">
+                                        <div class="flex justify-between text-red-300">
+                                            <span>病假扣款（扣半薪）</span>
+                                            <div>
+                                                <span id="detail-sick-leave-hours" class="font-mono">0h</span>
+                                                <span class="mx-1">→</span>
+                                                <span id="detail-sick-leave-deduction" class="font-mono">$0</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex justify-between text-orange-300">
+                                            <span>事假扣款（扣全薪）</span>
+                                            <div>
+                                                <span id="detail-personal-leave-hours" class="font-mono">0h</span>
+                                                <span class="mx-1">→</span>
+                                                <span id="detail-personal-leave-deduction" class="font-mono">$0</span>
+                                            </div>
+                                        </div>
                                     </div>
                                     <!-- ⭐⭐⭐ 新增：5 個扣款項目分別顯示 -->
                                     <div class="flex justify-between">
@@ -1449,7 +1485,20 @@
             bindAutoCalculation();
             bindHourlyCalculation();
         });
-
+        
+        // 新增：切換請假扣款明細顯示
+        function toggleLeaveDeductionDetail() {
+            const detail = document.getElementById('leave-deduction-detail');
+            const toggle = document.getElementById('leave-deduction-toggle');
+            
+            if (detail.style.display === 'none') {
+                detail.style.display = 'block';
+                toggle.textContent = '▲';
+            } else {
+                detail.style.display = 'none';
+                toggle.textContent = '▼';
+            }
+        }
         async function checkUserPermission() {
             try {
                 const res = await callApifetch("checkSession");

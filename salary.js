@@ -587,6 +587,40 @@ function displayEmployeeSalary(data) {
     console.log('   休息日:', restdayPay);
     console.log('   例假日:', holidayPay);
 
+    // ⭐⭐⭐ 新增：未休假補薪顯示
+    const unusedLeavePay = parseFloat(data['未休假補薪'] || data.unusedLeavePay) || 0;
+    const unusedLeaveDays = parseFloat(data['未休假天數'] || data.unusedLeaveDays) || 0;
+    
+    safeSet('detail-unused-leave-pay', formatCurrency(unusedLeavePay));
+    safeSet('detail-unused-leave-days', `${unusedLeaveDays} 天`);
+    
+    console.log(`🏖️ 未休假補薪: ${unusedLeavePay} 元（${unusedLeaveDays} 天）`);
+    
+    // ⭐⭐⭐ 新增：請假扣款明細顯示
+    const sickLeaveHours = parseFloat(data['病假時數'] || data.sickLeaveHours) || 0;
+    const sickLeaveDeduction = parseFloat(data['病假扣款'] || data.sickLeaveDeduction) || 0;
+    const personalLeaveHours = parseFloat(data['事假時數'] || data.personalLeaveHours) || 0;
+    const personalLeaveDeduction = parseFloat(data['事假扣款'] || data.personalLeaveDeduction) || 0;
+    
+    safeSet('detail-sick-leave-hours', `${sickLeaveHours}h`);
+    safeSet('detail-sick-leave-deduction', formatCurrency(sickLeaveDeduction));
+    safeSet('detail-personal-leave-hours', `${personalLeaveHours}h`);
+    safeSet('detail-personal-leave-deduction', formatCurrency(personalLeaveDeduction));
+    
+    console.log(`🏥 病假: ${sickLeaveHours}h → ${sickLeaveDeduction} 元`);
+    console.log(`📝 事假: ${personalLeaveHours}h → ${personalLeaveDeduction} 元`);
+    
+    // ⭐⭐⭐ 新增：如果有請假記錄，自動展開明細
+    if (sickLeaveHours > 0 || personalLeaveHours > 0) {
+        const detailEl = document.getElementById('leave-deduction-detail');
+        const toggleEl = document.getElementById('leave-deduction-toggle');
+        
+        if (detailEl && toggleEl) {
+            detailEl.style.display = 'block';
+            toggleEl.textContent = '▲';
+        }
+    }
+
     safeSet('detail-weekday-overtime', formatCurrency(weekdayPay));
     safeSet('detail-restday-overtime', formatCurrency(restdayPay));
     safeSet('detail-holiday-overtime', formatCurrency(holidayPay));
@@ -1112,6 +1146,35 @@ function displaySalaryCalculation(data, container) {
                         <span>績效獎金</span>
                         <span class="font-mono">${formatCurrency(data.performanceBonus || 0)}</span>
                     </div>
+                    
+                    // ⭐ 新增：未休假補薪
+                    ${data.unusedLeavePay > 0 ? `
+                        <div class="calculation-row">
+                            <span>未休假補薪 (${data.unusedLeaveDays}天)</span>
+                            <span class="font-mono">${formatCurrency(data.unusedLeavePay)}</span>
+                        </div>
+                    ` : ''}
+
+                    // ⭐ 新增：請假扣款明細
+                    ${data.sickLeaveHours > 0 || data.personalLeaveHours > 0 ? `
+                        <div class="calculation-row" style="background: rgba(239, 68, 68, 0.1); padding: 0.75rem; border-radius: 8px; margin-top: 0.5rem;">
+                            <div style="width: 100%;">
+                                <div style="font-weight: 600; color: #ef4444; margin-bottom: 0.5rem;">請假扣款明細：</div>
+                                ${data.sickLeaveHours > 0 ? `
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 0.25rem;">
+                                        <span>病假 ${data.sickLeaveHours}h（扣半薪）</span>
+                                        <span class="font-mono">${formatCurrency(data.sickLeaveDeduction)}</span>
+                                    </div>
+                                ` : ''}
+                                ${data.personalLeaveHours > 0 ? `
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.875rem;">
+                                        <span>事假 ${data.personalLeaveHours}h（扣全薪）</span>
+                                        <span class="font-mono">${formatCurrency(data.personalLeaveDeduction)}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
                     ${weekdayOvertimePay > 0 ? `
                         <div class="calculation-row">
                             <span>平日加班費</span>
