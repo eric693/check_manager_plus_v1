@@ -907,25 +907,39 @@
                                 <input type="text" id="config-id-number" class="form-input" placeholder="選填" maxlength="10">
                             </div>
                             <div class="form-group">
-                                <label class="form-label required" data-i18n="SALARY_EMPLOYEE_TYPE_LABEL">員工類型</label>
+                                <label class="form-label required">員工類型</label>
                                 <select id="config-employee-type" class="form-select" required onchange="onEmployeeTypeChange()">
-                                    <option value="">請選擇</option>
-                                    <option value="月薪制-不定時">飼料廠司機（月薪制-不定時工作）</option>
-                                    <option value="時薪制-標準">食品廠移工（時薪制-標準工時）</option>
-                                    <option value="月薪制-標準">管理部行政（月薪制-標準工時）</option>
+                                    <option value="">請選擇員工類型</option>
+                                    <option value="飼料廠司機" 
+                                            data-salary-type="月薪" 
+                                            data-work-time-type="不定時">
+                                        飼料廠司機（月薪制-不定時工作）
+                                    </option>
+                                    <option value="食品廠移工" 
+                                            data-salary-type="時薪" 
+                                            data-work-time-type="標準工時">
+                                        食品廠移工（時薪制-標準工時）
+                                    </option>
+                                    <option value="管理部行政" 
+                                            data-salary-type="月薪" 
+                                            data-work-time-type="標準工時">
+                                        管理部行政（月薪制-標準工時）
+                                    </option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label class="form-label required" data-i18n="SALARY_TYPE_LABEL">薪資類型</label>
+                                <label class="form-label required">薪資類型</label>
                                 <select id="config-salary-type" class="form-select" required>
-                                    <option value="">請選擇</option>
+                                    <option value="">請先選擇員工類型</option>
                                     <option value="月薪">月薪</option>
                                     <option value="時薪">時薪</option>
                                 </select>
+                                <span class="form-hint">根據員工類型自動設定</span>
                             </div>
+                            
                             <div class="form-group">
                                 <label class="form-label required">工時類型</label>
-                                <select id="config-work-time-type" class="form-select" disabled required>
+                                <select id="config-work-time-type" class="form-select" required>
                                     <option value="">請先選擇員工類型</option>
                                     <option value="不定時">不定時工作（不需打卡考勤）</option>
                                     <option value="標準工時">標準工時（需打卡考勤）</option>

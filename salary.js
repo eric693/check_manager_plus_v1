@@ -1893,30 +1893,41 @@ console.log('✅ 薪資管理系統（完整版 v2.0）JS 已載入');
 console.log('📋 包含：基本薪資 + 6項津貼 + 10項扣款');
 
 /**
- * ⭐ 員工類型改變時的處理函數
+ * ⭐ 員工類型改變時的處理函數（修正版）
  */
 function onEmployeeTypeChange() {
-    const employeeType = document.getElementById('config-employee-type').value;
+    const selectEl = document.getElementById('config-employee-type');
     const salaryTypeEl = document.getElementById('config-salary-type');
     const workTimeTypeEl = document.getElementById('config-work-time-type');
     
-    if (!employeeType) {
+    if (!selectEl || !salaryTypeEl || !workTimeTypeEl) return;
+    
+    const selectedOption = selectEl.options[selectEl.selectedIndex];
+    
+    if (!selectedOption || !selectedOption.value) {
         // 未選擇員工類型
         salaryTypeEl.value = '';
         workTimeTypeEl.value = '';
-        workTimeTypeEl.disabled = true;
         return;
     }
     
-    // 根據員工類型自動設定
+    // ⭐⭐⭐ 從 data-* 屬性讀取
+    const salaryType = selectedOption.getAttribute('data-salary-type') || '';
+    const workTimeType = selectedOption.getAttribute('data-work-time-type') || '';
+    
+    salaryTypeEl.value = salaryType;
+    workTimeTypeEl.value = workTimeType;
+    
+    console.log('✅ 員工類型已切換:');
+    console.log('   員工類型:', selectedOption.value);
+    console.log('   薪資類型:', salaryType);
+    console.log('   工時類型:', workTimeType);
+    
+    // 根據員工類型自動填入津貼/扣款
+    const employeeType = selectedOption.value;
+    
     switch (employeeType) {
-        case '月薪制-不定時':
-            // 飼料廠司機
-            salaryTypeEl.value = '月薪';
-            workTimeTypeEl.value = '不定時';
-            workTimeTypeEl.disabled = true;
-            
-            // 自動填入津貼
+        case '飼料廠司機':
             setSuggestedAllowances({
                 position: 5000,
                 meal: 3000,
@@ -1924,13 +1935,7 @@ function onEmployeeTypeChange() {
             });
             break;
             
-        case '時薪制-標準':
-            // 食品廠移工
-            salaryTypeEl.value = '時薪';
-            workTimeTypeEl.value = '標準工時';
-            workTimeTypeEl.disabled = true;
-            
-            // 自動填入扣款
+        case '食品廠移工':
             setSuggestedDeductions({
                 dormitory: 1500,
                 meal: 3000,
@@ -1938,29 +1943,18 @@ function onEmployeeTypeChange() {
             });
             break;
             
-        case '月薪制-標準':
-            // 管理部行政
-            salaryTypeEl.value = '月薪';
-            workTimeTypeEl.value = '標準工時';
-            workTimeTypeEl.disabled = true;
-            
-            // 自動填入津貼
+        case '管理部行政':
             setSuggestedAllowances({
                 meal: 2400
             });
             break;
-            
-        default:
-            salaryTypeEl.value = '';
-            workTimeTypeEl.value = '';
-            workTimeTypeEl.disabled = true;
     }
     
-    console.log('✅ 員工類型已切換:', employeeType);
-    console.log('   薪資類型:', salaryTypeEl.value);
-    console.log('   工時類型:', workTimeTypeEl.value);
+    // ⭐ 觸發自動計算
+    if (typeof autoCalculateDeductions === 'function') {
+        autoCalculateDeductions();
+    }
 }
-
 /**
  * ⭐ 自動填入建議津貼
  */
