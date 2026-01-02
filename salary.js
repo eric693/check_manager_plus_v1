@@ -981,7 +981,11 @@ async function handleSalaryCalculation() {
 }
 
 /**
- * ✅ 顯示薪資計算結果（支援月薪/時薪區分）
+ * ✅ 顯示薪資計算結果（完整版 - 已修正顯示所有津貼和扣款）
+ * 
+ * ⭐ 修改說明：
+ * 1. 新增顯示 otherAllowance1/2/3
+ * 2. 分開顯示 otherDeduction1/2（取代原本的 otherDeductions）
  */
 function displaySalaryCalculation(data, container) {
     if (!container) return;
@@ -996,7 +1000,8 @@ function displaySalaryCalculation(data, container) {
         (parseFloat(data.welfareFee) || 0) +
         (parseFloat(data.dormitoryFee) || 0) +
         (parseFloat(data.groupInsurance) || 0) +
-        (parseFloat(data.otherDeductions) || 0);
+        (parseFloat(data.otherDeduction1) || 0) +  // ⭐ 改用分開的欄位
+        (parseFloat(data.otherDeduction2) || 0);   // ⭐ 改用分開的欄位
     
     const isHourly = data.salaryType === '時薪';
     
@@ -1147,7 +1152,26 @@ function displaySalaryCalculation(data, container) {
                         <span class="font-mono">${formatCurrency(data.performanceBonus || 0)}</span>
                     </div>
                     
-                    // ⭐ 新增：未休假補薪
+                    <!-- ⭐⭐⭐ 新增：其他津貼1/2/3 -->
+                    ${(data.otherAllowance1 || 0) > 0 ? `
+                        <div class="calculation-row">
+                            <span>其他津貼1</span>
+                            <span class="font-mono">${formatCurrency(data.otherAllowance1)}</span>
+                        </div>
+                    ` : ''}
+                    ${(data.otherAllowance2 || 0) > 0 ? `
+                        <div class="calculation-row">
+                            <span>其他津貼2</span>
+                            <span class="font-mono">${formatCurrency(data.otherAllowance2)}</span>
+                        </div>
+                    ` : ''}
+                    ${(data.otherAllowance3 || 0) > 0 ? `
+                        <div class="calculation-row">
+                            <span>其他津貼3</span>
+                            <span class="font-mono">${formatCurrency(data.otherAllowance3)}</span>
+                        </div>
+                    ` : ''}
+                    
                     ${data.unusedLeavePay > 0 ? `
                         <div class="calculation-row">
                             <span>未休假補薪 (${data.unusedLeaveDays}天)</span>
@@ -1155,7 +1179,6 @@ function displaySalaryCalculation(data, container) {
                         </div>
                     ` : ''}
 
-                    // ⭐ 新增：請假扣款明細
                     ${data.sickLeaveHours > 0 || data.personalLeaveHours > 0 ? `
                         <div class="calculation-row" style="background: rgba(239, 68, 68, 0.1); padding: 0.75rem; border-radius: 8px; margin-top: 0.5rem;">
                             <div style="width: 100%;">
@@ -1239,10 +1262,21 @@ function displaySalaryCalculation(data, container) {
                         <span>團保費用</span>
                         <span class="font-mono">${formatCurrency(data.groupInsurance || 0)}</span>
                     </div>
-                    <div class="calculation-row">
-                        <span>其他扣款</span>
-                        <span class="font-mono">${formatCurrency(data.otherDeductions || 0)}</span>
-                    </div>
+                    
+                    <!-- ⭐⭐⭐ 新增：分開顯示其他扣款1/2（取代原本的 otherDeductions） -->
+                    ${(data.otherDeduction1 || 0) > 0 ? `
+                        <div class="calculation-row">
+                            <span>其他扣款1</span>
+                            <span class="font-mono">${formatCurrency(data.otherDeduction1)}</span>
+                        </div>
+                    ` : ''}
+                    ${(data.otherDeduction2 || 0) > 0 ? `
+                        <div class="calculation-row">
+                            <span>其他扣款2</span>
+                            <span class="font-mono">${formatCurrency(data.otherDeduction2)}</span>
+                        </div>
+                    ` : ''}
+                    
                     <div class="calculation-row total">
                         <span>實發金額</span>
                         <span>${formatCurrency(data.netSalary)}</span>
@@ -1252,8 +1286,7 @@ function displaySalaryCalculation(data, container) {
         </div>
     `;
 }
-
-/**
+/*
  * ✅ 儲存薪資記錄
  */
 async function saveSalaryRecord(data) {
