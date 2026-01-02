@@ -596,6 +596,15 @@ function displayEmployeeSalary(data) {
     
     console.log(`🏖️ 未休假補薪: ${unusedLeavePay} 元（${unusedLeaveDays} 天）`);
     
+    // ⭐⭐⭐ 新增：月休補薪顯示
+    const monthlyRestPay = parseFloat(data['月休補薪'] || data.monthlyRestPay) || 0;
+    const missedRestDays = parseFloat(data['未休月休天數'] || data.missedRestDays) || 0;
+
+    safeSet('detail-monthly-rest-pay', formatCurrency(monthlyRestPay));
+    safeSet('detail-monthly-rest-days', `${missedRestDays} 天`);
+
+    console.log(`🌙 月休補薪: ${monthlyRestPay} 元（未休 ${missedRestDays} 天）`);
+    
     // ⭐⭐⭐ 新增：請假扣款明細顯示
     const sickLeaveHours = parseFloat(data['病假時數'] || data.sickLeaveHours) || 0;
     const sickLeaveDeduction = parseFloat(data['病假扣款'] || data.sickLeaveDeduction) || 0;
