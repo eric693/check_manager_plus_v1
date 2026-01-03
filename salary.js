@@ -2075,4 +2075,78 @@ function setSuggestedDeductions(deductions) {
     }
 }
 
+/**
+ * ✅ 薪資資料除錯工具
+ */
+function debugSalaryData(data) {
+    console.group('🔍 薪資資料完整除錯');
+    
+    // 基本資訊
+    console.log('📋 基本資訊:');
+    console.log('  員工姓名:', data['員工姓名']);
+    console.log('  年月:', data['年月']);
+    console.log('  薪資類型:', data['薪資類型']);
+    
+    // 未休假補薪
+    console.log('');
+    console.log('🏖️ 未休假補薪:');
+    console.log('  補薪金額:', data['未休假補薪'] || data.unusedLeavePay);
+    console.log('  未休天數:', data['未休假天數'] || data.unusedLeaveDays);
+    
+    // 月休補薪
+    console.log('');
+    console.log('🌙 月休補薪:');
+    console.log('  補薪金額:', data['月休補薪'] || data.monthlyRestPay);
+    console.log('  未休天數:', data['未休月休天數'] || data.missedRestDays);
+    
+    // 請假扣款
+    console.log('');
+    console.log('🏥 請假扣款:');
+    console.log('  病假時數:', data['病假時數'] || data.sickLeaveHours);
+    console.log('  病假扣款:', data['病假扣款'] || data.sickLeaveDeduction);
+    console.log('  事假時數:', data['事假時數'] || data.personalLeaveHours);
+    console.log('  事假扣款:', data['事假扣款'] || data.personalLeaveDeduction);
+    
+    // 加班費
+    console.log('');
+    console.log('⏰ 加班費:');
+    console.log('  平日:', data['平日加班費'] || data.weekdayOvertimePay);
+    console.log('  休息日:', data['休息日加班費'] || data.restdayOvertimePay);
+    console.log('  例假日:', data['國定假日加班費'] || data.holidayOvertimePay);
+    
+    console.groupEnd();
+}
+
+/**
+ * ✅ 快速測試薪資資料載入
+ */
+async function quickTestSalaryData(yearMonth) {
+    const testMonth = yearMonth || '2026-01';
+    
+    console.log(`🧪 開始測試 ${testMonth} 薪資資料...`);
+    
+    try {
+        const res = await callApifetch(`getMySalary&yearMonth=${testMonth}`);
+        
+        console.log('📦 完整 API 回應:', res);
+        
+        if (res.ok && res.data) {
+            // 呼叫除錯工具
+            debugSalaryData(res.data);
+            
+            // 測試顯示函數
+            displayEmployeeSalary(res.data);
+            
+            console.log('✅ 測試完成！');
+        } else {
+            console.error('❌ 無薪資資料');
+        }
+    } catch (error) {
+        console.error('❌ 測試失敗:', error);
+    }
+}
+
+// 綁定到 window 方便 console 呼叫
+window.quickTestSalaryData = quickTestSalaryData;
+window.debugSalaryData = debugSalaryData;
 console.log('✅ 員工類型切換功能已載入');
