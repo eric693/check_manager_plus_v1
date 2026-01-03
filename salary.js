@@ -2265,6 +2265,24 @@ async function checkBonusDisplay() {
 // 綁定到全域
 window.checkBonusDisplay = checkBonusDisplay;
 
+// 檢查 DOM 元素是否存在
+console.log('🔍 檢查 DOM 元素:');
+console.log('未休假補薪元素:', document.getElementById('detail-unused-leave-pay'));
+console.log('未休假天數元素:', document.getElementById('detail-unused-leave-days'));
+console.log('月休補薪元素:', document.getElementById('detail-monthly-rest-pay'));
+console.log('月休天數元素:', document.getElementById('detail-monthly-rest-days'));
+
+// 檢查後端資料
+callApifetch('getMySalary&yearMonth=2026-01').then(res => {
+    if (res.ok && res.data) {
+        console.log('📊 後端資料:');
+        console.log('未休假補薪:', res.data['未休假補薪']);
+        console.log('未休假天數:', res.data['未休假天數']);
+        console.log('月休補薪:', res.data['月休補薪']);
+        console.log('未休月休天數:', res.data['未休月休天數']);
+    }
+});
+
 // 執行
 console.log('執行指令：checkBonusDisplay()');
 // 綁定到 window 方便 console 呼叫
