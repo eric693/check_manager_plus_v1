@@ -1326,11 +1326,13 @@ async function saveSalaryRecord(data) {
             `&weekdayOvertimePay=${encodeURIComponent(data.weekdayOvertimePay || 0)}` +
             `&restdayOvertimePay=${encodeURIComponent(data.restdayOvertimePay || 0)}` +
             `&holidayOvertimePay=${encodeURIComponent(data.holidayOvertimePay || 0)}` +
-            // ⭐⭐⭐ 加入補薪欄位
+            
+            // ⭐⭐⭐ 補薪項目（修正命名）
             `&unusedLeavePay=${encodeURIComponent(data.unusedLeavePay || 0)}` +
             `&unusedLeaveDays=${encodeURIComponent(data.unusedLeaveDays || 0)}` +
             `&monthlyRestPay=${encodeURIComponent(data.monthlyRestPay || 0)}` +
-            `&missedRestDays=${encodeURIComponent(data.missedRestDays || data.monthlyRestMissedDays || 0)}` +
+            `&monthlyRestMissedDays=${encodeURIComponent(data.monthlyRestMissedDays || 0)}` +  // ⭐ 改為統一的命名
+            
             // 扣款項目
             `&laborFee=${encodeURIComponent(data.laborFee || 0)}` +
             `&healthFee=${encodeURIComponent(data.healthFee || 0)}` +
@@ -1339,20 +1341,24 @@ async function saveSalaryRecord(data) {
             `&pensionSelfRate=${encodeURIComponent(data.pensionSelfRate || 0)}` +
             `&incomeTax=${encodeURIComponent(data.incomeTax || 0)}` +
             `&leaveDeduction=${encodeURIComponent(data.leaveDeduction || 0)}` +
+            
             // ⭐⭐⭐ 請假明細
             `&sickLeaveHours=${encodeURIComponent(data.sickLeaveHours || 0)}` +
             `&sickLeaveDeduction=${encodeURIComponent(data.sickLeaveDeduction || 0)}` +
             `&personalLeaveHours=${encodeURIComponent(data.personalLeaveHours || 0)}` +
             `&personalLeaveDeduction=${encodeURIComponent(data.personalLeaveDeduction || 0)}` +
+            
             // 其他扣款
             `&welfareFee=${encodeURIComponent(data.welfareFee || 0)}` +
             `&dormitoryFee=${encodeURIComponent(data.dormitoryFee || 0)}` +
             `&groupInsurance=${encodeURIComponent(data.groupInsurance || 0)}` +
             `&otherDeduction1=${encodeURIComponent(data.otherDeduction1 || 0)}` +
             `&otherDeduction2=${encodeURIComponent(data.otherDeduction2 || 0)}` +
+            
             // 總額
             `&grossSalary=${encodeURIComponent(data.grossSalary)}` +
             `&netSalary=${encodeURIComponent(data.netSalary)}` +
+            
             // 銀行資訊
             `&bankCode=${encodeURIComponent(data.bankCode || '')}` +
             `&bankAccount=${encodeURIComponent(data.bankAccount || '')}` +
@@ -1371,7 +1377,6 @@ async function saveSalaryRecord(data) {
         showNotification(t('SALARY_SAVE_ERROR'), 'error');
     }
 }
-
 /**
  * 載入所有員工薪資列表
  */
