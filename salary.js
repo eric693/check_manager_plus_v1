@@ -1187,7 +1187,13 @@ function displaySalaryCalculation(data, container) {
                             <span class="font-mono">${formatCurrency(data.unusedLeavePay)}</span>
                         </div>
                     ` : ''}
-
+                    <!-- ⭐⭐⭐ 新增這段 -->
+                    ${data.monthlyRestPay > 0 ? `
+                        <div class="calculation-row">
+                            <span>月休補薪 (未休${data.monthlyRestMissedDays || data.missedRestDays}天)</span>
+                            <span class="font-mono">${formatCurrency(data.monthlyRestPay)}</span>
+                        </div>
+                    ` : ''}
                     ${data.sickLeaveHours > 0 || data.personalLeaveHours > 0 ? `
                         <div class="calculation-row" style="background: rgba(239, 68, 68, 0.1); padding: 0.75rem; border-radius: 8px; margin-top: 0.5rem;">
                             <div style="width: 100%;">
