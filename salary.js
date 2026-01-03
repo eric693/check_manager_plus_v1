@@ -1259,10 +1259,27 @@ function displaySalaryCalculation(data, container) {
                         <span>所得稅</span>
                         <span class="font-mono">${formatCurrency(data.incomeTax)}</span>
                     </div>
-                    ${!isHourly && data.leaveDeduction > 0 ? `
-                        <div class="calculation-row">
-                            <span>請假扣款</span>
-                            <span class="font-mono">${formatCurrency(data.leaveDeduction)}</span>
+                    <!-- ⭐⭐⭐ 修正：請假扣款（含明細） -->
+                    ${(data.sickLeaveHours > 0 || data.personalLeaveHours > 0) ? `
+                        <div class="calculation-row" style="background: rgba(239, 68, 68, 0.1); padding: 0.75rem; border-radius: 8px; margin-top: 0.5rem;">
+                            <div style="width: 100%;">
+                                <div style="display: flex; justify-content: space-between; font-weight: 600; color: #ef4444; margin-bottom: 0.5rem;">
+                                    <span>請假扣款</span>
+                                    <span class="font-mono">${formatCurrency((data.sickLeaveDeduction || 0) + (data.personalLeaveDeduction || 0))}</span>
+                                </div>
+                                ${data.sickLeaveHours > 0 ? `
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.875rem; color: #fca5a5; margin-bottom: 0.25rem;">
+                                        <span>• 病假 ${data.sickLeaveHours}h（扣半薪）</span>
+                                        <span class="font-mono">${formatCurrency(data.sickLeaveDeduction)}</span>
+                                    </div>
+                                ` : ''}
+                                ${data.personalLeaveHours > 0 ? `
+                                    <div style="display: flex; justify-between; font-size: 0.875rem; color: #fb923c;">
+                                        <span>• 事假 ${data.personalLeaveHours}h（扣全薪）</span>
+                                        <span class="font-mono">${formatCurrency(data.personalLeaveDeduction)}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
                         </div>
                     ` : ''}
                     <div class="calculation-row">
