@@ -2146,6 +2146,84 @@ async function quickTestSalaryData(yearMonth) {
     }
 }
 
+// ✅ 在 Console 執行這個函數來檢查補薪顯示
+async function checkBonusDisplay() {
+    console.log('🔍 開始檢查補薪顯示...\n');
+    
+    try {
+        const res = await callApifetch('getMySalary&yearMonth=2026-01');
+        
+        if (!res.ok || !res.data) {
+            console.error('❌ 無法取得薪資資料');
+            return;
+        }
+        
+        const data = res.data;
+        
+        console.log('📊 補薪資料檢查：');
+        console.log('═══════════════════════════════════════\n');
+        
+        // 未休假補薪
+        const unusedLeavePay = parseFloat(data['未休假補薪'] || data.unusedLeavePay) || 0;
+        const unusedLeaveDays = parseFloat(data['未休假天數'] || data.unusedLeaveDays) || 0;
+        
+        console.log('🏖️  未休假補薪：');
+        console.log(`   金額：${formatCurrency(unusedLeavePay)}`);
+        console.log(`   天數：${unusedLeaveDays} 天`);
+        console.log(`   狀態：${unusedLeavePay > 0 ? '✅ 有補薪' : '⚠️ 無補薪'}\n`);
+        
+        // 月休補薪
+        const monthlyRestPay = parseFloat(data['月休補薪'] || data.monthlyRestPay) || 0;
+        const missedRestDays = parseFloat(data['未休月休天數'] || data.missedRestDays) || 0;
+        
+        console.log('🌙 月休補薪：');
+        console.log(`   金額：${formatCurrency(monthlyRestPay)}`);
+        console.log(`   未休天數：${missedRestDays} 天`);
+        console.log(`   狀態：${monthlyRestPay > 0 ? '✅ 有補薪' : '⚠️ 無補薪'}\n`);
+        
+        console.log('═══════════════════════════════════════\n');
+        
+        // 檢查 HTML 元素
+        console.log('🎨 檢查畫面元素：\n');
+        
+        const unusedLeavePayEl = document.getElementById('detail-unused-leave-pay');
+        const unusedLeaveDaysEl = document.getElementById('detail-unused-leave-days');
+        const monthlyRestPayEl = document.getElementById('detail-monthly-rest-pay');
+        const monthlyRestDaysEl = document.getElementById('detail-monthly-rest-days');
+        
+        console.log('未休假補薪元素：', unusedLeavePayEl ? '✅ 存在' : '❌ 不存在');
+        if (unusedLeavePayEl) {
+            console.log(`   顯示內容：${unusedLeavePayEl.textContent}`);
+        }
+        
+        console.log('未休假天數元素：', unusedLeaveDaysEl ? '✅ 存在' : '❌ 不存在');
+        if (unusedLeaveDaysEl) {
+            console.log(`   顯示內容：${unusedLeaveDaysEl.textContent}`);
+        }
+        
+        console.log('月休補薪元素：', monthlyRestPayEl ? '✅ 存在' : '❌ 不存在');
+        if (monthlyRestPayEl) {
+            console.log(`   顯示內容：${monthlyRestPayEl.textContent}`);
+        }
+        
+        console.log('月休天數元素：', monthlyRestDaysEl ? '✅ 存在' : '❌ 不存在');
+        if (monthlyRestDaysEl) {
+            console.log(`   顯示內容：${monthlyRestDaysEl.textContent}`);
+        }
+        
+        console.log('\n═══════════════════════════════════════');
+        console.log('✅ 檢查完成！');
+        
+    } catch (error) {
+        console.error('❌ 檢查失敗:', error);
+    }
+}
+
+// 綁定到全域
+window.checkBonusDisplay = checkBonusDisplay;
+
+// 執行
+console.log('執行指令：checkBonusDisplay()');
 // 綁定到 window 方便 console 呼叫
 window.quickTestSalaryData = quickTestSalaryData;
 window.debugSalaryData = debugSalaryData;
