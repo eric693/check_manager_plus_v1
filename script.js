@@ -3689,9 +3689,6 @@ function resetBiometric() {
     showNotification('生物辨識已重置', 'success');
 }
 
-/**
-     * 執行打卡
-     */
 async function doPunch(type) {
     const punchButtonId = type === '上班' ? 'punch-in-btn' : 'punch-out-btn';
     
@@ -3756,7 +3753,10 @@ async function doPunch(type) {
     navigator.geolocation.getCurrentPosition(async (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        const action = `punch&type=${encodeURIComponent(type)}&lat=${lat}&lng=${lng}&note=${encodeURIComponent(navigator.userAgent)}`;
+        
+        // ⭐⭐⭐ 關鍵修正：加入 token
+        const sessionToken = localStorage.getItem("sessionToken");
+        const action = `punch&type=${encodeURIComponent(type)}&lat=${lat}&lng=${lng}&note=${encodeURIComponent(navigator.userAgent)}&token=${sessionToken}`;
         
         try {
             const res = await callApifetch(action);
@@ -3778,7 +3778,6 @@ async function doPunch(type) {
         generalButtonState(button, 'idle');
     });
 }
-
 /**
  * 輔助函數：計算時間差（分鐘）
  */
