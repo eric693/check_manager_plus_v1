@@ -400,34 +400,29 @@ async function submitLeaveApplication() {
     const reason = document.getElementById('leave-reason').value;
     const workHours = calculateWorkHours(startTime, endTime);
     
-    // ⭐⭐⭐ 新增：計算請假天數
-    const days = workHours / 8;
-    
     console.log('📋 提交資料:', {
         leaveType,
         startTime,
         endTime,
         workHours,
-        days,
         reason
     });
-    
-    // ⭐⭐⭐ 新增：檢查假期餘額
+
     try {
         const balanceRes = await callApifetch('getLeaveBalance');
         
         if (balanceRes.ok && balanceRes.balance) {
-            const availableDays = balanceRes.balance[leaveType] || 0;
+            const availableHours = balanceRes.balance[leaveType] || 0;  // ⭐ 直接是小時
             
             console.log(`💰 假期餘額檢查:`, {
                 假別: leaveType,
-                可用天數: availableDays,
-                申請天數: days
+                可用小時: availableHours,  // ⭐
+                申請小時: workHours        // ⭐
             });
             
-            if (days > availableDays) {
+            if (workHours > availableHours) {  // ⭐ 直接比較小時數
                 showNotification(
-                    `餘額不足！${t(leaveType)} 剩餘 ${availableDays * 8} 小時（${availableDays} 天），但您申請了 ${workHours} 小時（${days} 天）`,
+                    `餘額不足！${t(leaveType)} 剩餘 ${availableHours} 小時，但您申請了 ${workHours} 小時`,  // ⭐
                     'error'
                 );
                 return;
@@ -435,7 +430,6 @@ async function submitLeaveApplication() {
         }
     } catch (error) {
         console.error('❌ 檢查餘額失敗:', error);
-        // 繼續提交（不阻擋）
     }
     
     const button = document.getElementById('submit-leave-btn');
@@ -584,7 +578,7 @@ async function loadLeaveBalance() {
 }
 
 /**
- * 渲染假期餘額（顯示小時數）
+ * ✅ 修正：渲染假期餘額（直接顯示小時數，不需轉換）
  */
 function renderLeaveBalance(balance) {
     const listEl = document.getElementById('leave-balance-list');
@@ -611,14 +605,8 @@ function renderLeaveBalance(balance) {
             typeSpan.className = 'font-medium text-gray-800 dark:text-white';
             typeSpan.textContent = t(leaveType);
             
-            // ✅ 將天數轉換為小時數（1天 = 8小時）
-            const days = balance[leaveType];
-            const hours = days * 8;
-            
-            // 輸出主要假別的餘額（避免日誌過多）
-            if (leaveType === 'ANNUAL_LEAVE' || leaveType === 'PERSONAL_LEAVE') {
-                console.log(`  ${leaveType}: ${days} 天 = ${hours} 小時`);
-            }
+            // ⭐⭐⭐ 修正：直接使用小時數（不需轉換）
+            const hours = balance[leaveType];  // 後端已經是小時數了
             
             const hoursSpan = document.createElement('span');
             hoursSpan.className = leaveType === 'ABSENCE_WITHOUT_LEAVE' 
