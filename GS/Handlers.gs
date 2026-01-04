@@ -872,48 +872,18 @@ function handleExportShifts(params) {
 
 // ==================== 薪資系統 Handler 函數（完全修正版 v4.0）====================
 
-// Handlers.gs - handleSetEmployeeSalaryTW 完全修正版 v5.0
-// ⭐ 修正：補齊所有津貼和扣款參數
-
-/**
- * ✅ 處理設定員工薪資（完全修正版 v5.0）
- */
 function handleSetEmployeeSalaryTW(params) {
   try {
-    Logger.log('═══════════════════════════════════════');
-    Logger.log('💰 開始設定員工薪資（完整版 v5.0）');
-    Logger.log('═══════════════════════════════════════');
+    Logger.log('💰 開始設定員工薪資');
     
     if (!params || Object.keys(params).length === 0) {
-      Logger.log('❌ params 為空或未定義');
       return { ok: false, msg: "未收到任何參數" };
     }
     
-    Logger.log('📥 收到的參數:');
-    Logger.log('   - token: ' + (params.token ? '存在' : '缺少'));
-    Logger.log('   - employeeId: ' + (params.employeeId || '缺少'));
-    Logger.log('   - employeeName: ' + (params.employeeName || '缺少'));
-    Logger.log('   - baseSalary: ' + (params.baseSalary || '缺少'));
-    Logger.log('   - positionAllowance: ' + (params.positionAllowance || '0'));
-    Logger.log('   - mealAllowance: ' + (params.mealAllowance || '0'));
-    Logger.log('   - transportAllowance: ' + (params.transportAllowance || '0'));
-    Logger.log('   - attendanceBonus: ' + (params.attendanceBonus || '0'));
-    Logger.log('   - performanceBonus: ' + (params.performanceBonus || '0'));
-    Logger.log('   - otherAllowances: ' + (params.otherAllowances || '0'));
-    
-    if (!params.token) {
-      Logger.log('❌ 缺少認證 token');
-      return { ok: false, msg: "缺少認證 token" };
-    }
-    
-    const sessionResult = checkSession_(params.token);
-    
-    if (!sessionResult.ok) {
-      Logger.log('❌ Session 驗證失敗');
+    // Session 驗證
+    if (!params.token || !validateSession(params.token)) {
       return { ok: false, msg: "未授權或 session 已過期" };
     }
-    
-    Logger.log('✅ Session 驗證成功');
     
     const safeString = (value) => {
       if (value === null || value === undefined) return '';
@@ -926,31 +896,33 @@ function handleSetEmployeeSalaryTW(params) {
       return isNaN(num) ? 0 : num;
     };
     
-    // ⭐⭐⭐ 關鍵修正：補齊所有津貼和扣款參數
     const salaryData = {
-      // 基本資訊 (6 項)
+      // ========== 基本資訊 (7 個參數: A-G) ⭐ 新增 workTimeType ==========
       employeeId: safeString(params.employeeId),
       employeeName: safeString(params.employeeName),
       idNumber: safeString(params.idNumber),
       employeeType: safeString(params.employeeType) || '正職',
       salaryType: safeString(params.salaryType) || '月薪',
+      workTimeType: safeString(params.workTimeType) || '標準工時',  // ⭐ 新增
       baseSalary: safeNumber(params.baseSalary),
       
-      // ⭐ 固定津貼（6 項）- 這是缺少的部分！
+      // ========== 固定津貼 (8 個參數: H-O) ==========
       positionAllowance: safeNumber(params.positionAllowance),
       mealAllowance: safeNumber(params.mealAllowance),
       transportAllowance: safeNumber(params.transportAllowance),
       attendanceBonus: safeNumber(params.attendanceBonus),
       performanceBonus: safeNumber(params.performanceBonus),
-      otherAllowances: safeNumber(params.otherAllowances),
+      otherAllowance1: safeNumber(params.otherAllowance1),
+      otherAllowance2: safeNumber(params.otherAllowance2),
+      otherAllowance3: safeNumber(params.otherAllowance3),
       
-      // 銀行資訊 (4 項)
+      // ========== 銀行資訊 (4 個參數: P-S) ==========
       bankCode: safeString(params.bankCode),
       bankAccount: safeString(params.bankAccount),
       hireDate: params.hireDate || new Date(),
       paymentDay: safeString(params.paymentDay) || '5',
       
-      // 法定扣款 (6 項)
+      // ========== 法定扣款 (6 個參數: T-Y) ==========
       pensionSelfRate: safeNumber(params.pensionSelfRate),
       laborFee: safeNumber(params.laborFee),
       healthFee: safeNumber(params.healthFee),
@@ -958,46 +930,27 @@ function handleSetEmployeeSalaryTW(params) {
       pensionSelf: safeNumber(params.pensionSelf),
       incomeTax: safeNumber(params.incomeTax),
       
-      // ⭐ 其他扣款（4 項）
+      // ========== 其他扣款 (5 個參數: Z-AD) ==========
       welfareFee: safeNumber(params.welfareFee),
       dormitoryFee: safeNumber(params.dormitoryFee),
       groupInsurance: safeNumber(params.groupInsurance),
-      otherDeductions: safeNumber(params.otherDeductions),
+      otherDeduction1: safeNumber(params.otherDeduction1),
+      otherDeduction2: safeNumber(params.otherDeduction2),
       
-      // 備註
+      // ========== 備註 (1 個參數: AE-AG) ==========
       note: safeString(params.note)
     };
     
-    Logger.log('');
     Logger.log('📋 組裝後的 salaryData:');
-    Logger.log('   基本薪資: ' + salaryData.baseSalary);
-    Logger.log('   職務加給: ' + salaryData.positionAllowance);
-    Logger.log('   伙食費: ' + salaryData.mealAllowance);
-    Logger.log('   交通補助: ' + salaryData.transportAllowance);
-    Logger.log('   全勤獎金: ' + salaryData.attendanceBonus);
-    Logger.log('   績效獎金: ' + salaryData.performanceBonus);
-    Logger.log('   其他津貼: ' + salaryData.otherAllowances);
-    Logger.log('   銀行代碼: ' + salaryData.bankCode);
-    Logger.log('   銀行帳號: ' + salaryData.bankAccount);
-    Logger.log('   福利金: ' + salaryData.welfareFee);
-    Logger.log('   宿舍費用: ' + salaryData.dormitoryFee);
-    Logger.log('   團保費用: ' + salaryData.groupInsurance);
-    Logger.log('   其他扣款: ' + salaryData.otherDeductions);
+    Logger.log('   工時類型: ' + salaryData.workTimeType);  // ⭐ 新增日誌
     
     // 驗證必填欄位
     if (!salaryData.employeeId || !salaryData.employeeName || salaryData.baseSalary <= 0) {
-      Logger.log('❌ 必填欄位驗證失敗');
       return { ok: false, msg: "必填欄位不完整或無效" };
     }
     
-    Logger.log('💾 開始儲存薪資設定...');
-    
     // 呼叫核心函數
     const result = setEmployeeSalaryTW(salaryData);
-    
-    Logger.log('📤 儲存結果: ' + result.success);
-    Logger.log('   訊息: ' + result.message);
-    Logger.log('═══════════════════════════════════════');
     
     return { 
       ok: result.success, 
@@ -1006,16 +959,8 @@ function handleSetEmployeeSalaryTW(params) {
     };
     
   } catch (error) {
-    Logger.log('❌❌❌ 發生嚴重錯誤');
-    Logger.log('錯誤訊息: ' + error.message);
-    Logger.log('錯誤堆疊: ' + error.stack);
-    Logger.log('═══════════════════════════════════════');
-    
-    return { 
-      ok: false, 
-      msg: `設定失敗: ${error.message}`,
-      error: error.stack
-    };
+    Logger.log('❌ handleSetEmployeeSalaryTW 錯誤: ' + error.message);
+    return { ok: false, msg: error.message };
   }
 }
 
@@ -1343,74 +1288,6 @@ function testCheckSalaryDataObject() {
   Logger.log('═══════════════════════════════════════');
 }
 
-/**
- * 📋 檢查 Sheet 欄位結構
- */
-function testCheckSheetStructure() {
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('📋 檢查 Sheet 欄位結構');
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('');
-  
-  const sheet = getEmployeeSalarySheet();
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  
-  Logger.log('📊 Sheet 欄位總數: ' + headers.length);
-  Logger.log('');
-  Logger.log('📋 完整欄位列表:');
-  
-  headers.forEach((header, index) => {
-    const column = String.fromCharCode(65 + index);
-    Logger.log(`   ${column} (${index + 1}): ${header}`);
-  });
-  
-  Logger.log('');
-  Logger.log('🔍 關鍵欄位檢查:');
-  Logger.log('   G 欄 (7):  ' + headers[6] + (headers[6] === '職務加給' ? ' ✅' : ' ❌'));
-  Logger.log('   H 欄 (8):  ' + headers[7] + (headers[7] === '伙食費' ? ' ✅' : ' ❌'));
-  Logger.log('   I 欄 (9):  ' + headers[8] + (headers[8] === '交通補助' ? ' ✅' : ' ❌'));
-  Logger.log('   L 欄 (12): ' + headers[11] + (headers[11] === '其他津貼' ? ' ✅' : ' ❌'));
-  Logger.log('   M 欄 (13): ' + headers[12] + (headers[12] === '銀行代碼' ? ' ✅' : ' ❌'));
-  Logger.log('   N 欄 (14): ' + headers[13] + (headers[13] === '銀行帳號' ? ' ✅' : ' ❌'));
-  Logger.log('   X 欄 (24): ' + headers[23] + (headers[23] === '宿舍費用' ? ' ✅' : ' ❌'));
-  Logger.log('   Z 欄 (26): ' + headers[25] + (headers[25] === '其他扣款' ? ' ✅' : ' ❌'));
-  
-  Logger.log('═══════════════════════════════════════');
-}
-/**
- * 📋 檢查 Sheet 欄位結構
- */
-function testCheckSheetStructure() {
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('📋 檢查 Sheet 欄位結構');
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('');
-  
-  const sheet = getEmployeeSalarySheet();
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  
-  Logger.log('📊 Sheet 欄位總數: ' + headers.length);
-  Logger.log('');
-  Logger.log('📋 完整欄位列表:');
-  
-  headers.forEach((header, index) => {
-    const column = String.fromCharCode(65 + index);
-    Logger.log(`   ${column} (${index + 1}): ${header}`);
-  });
-  
-  Logger.log('');
-  Logger.log('🔍 關鍵欄位檢查:');
-  Logger.log('   G 欄 (7):  ' + headers[6] + (headers[6] === '職務加給' ? ' ✅' : ' ❌'));
-  Logger.log('   H 欄 (8):  ' + headers[7] + (headers[7] === '伙食費' ? ' ✅' : ' ❌'));
-  Logger.log('   I 欄 (9):  ' + headers[8] + (headers[8] === '交通補助' ? ' ✅' : ' ❌'));
-  Logger.log('   L 欄 (12): ' + headers[11] + (headers[11] === '其他津貼' ? ' ✅' : ' ❌'));
-  Logger.log('   M 欄 (13): ' + headers[12] + (headers[12] === '銀行代碼' ? ' ✅' : ' ❌'));
-  Logger.log('   N 欄 (14): ' + headers[13] + (headers[13] === '銀行帳號' ? ' ✅' : ' ❌'));
-  Logger.log('   X 欄 (24): ' + headers[23] + (headers[23] === '宿舍費用' ? ' ✅' : ' ❌'));
-  Logger.log('   Z 欄 (26): ' + headers[25] + (headers[25] === '其他扣款' ? ' ✅' : ' ❌'));
-  
-  Logger.log('═══════════════════════════════════════');
-}
 /**
  * ✅ 處理取得員工薪資
  */
@@ -1742,9 +1619,6 @@ function handleCalculateMonthlySalary(params) {
   }
 }
 
-/**
- * ✅ 處理儲存月薪記錄
- */
 function handleSaveMonthlySalary(params) {
   try {
     if (!params.token || !validateSession(params.token)) {
@@ -1770,20 +1644,67 @@ function handleSaveMonthlySalary(params) {
         employeeId: params.employeeId,
         employeeName: params.employeeName,
         yearMonth: params.yearMonth,
+        salaryType: params.salaryType || '月薪',
+        workTimeType: params.workTimeType || '標準工時',
         baseSalary: params.baseSalary,
+        
+        // 固定津貼
+        positionAllowance: params.positionAllowance,
+        mealAllowance: params.mealAllowance,
+        transportAllowance: params.transportAllowance,
+        attendanceBonus: params.attendanceBonus,
+        performanceBonus: params.performanceBonus,
+        otherAllowance1: params.otherAllowance1,
+        otherAllowance2: params.otherAllowance2,
+        otherAllowance3: params.otherAllowance3,
+        
+        // 加班費
         weekdayOvertimePay: params.weekdayOvertimePay,
         restdayOvertimePay: params.restdayOvertimePay,
         holidayOvertimePay: params.holidayOvertimePay,
+        totalOvertimeHours: params.totalOvertimeHours,
+        
+        // ⭐⭐⭐ 補薪項目（修正）
+        unusedLeavePay: params.unusedLeavePay || 0,
+        unusedLeaveDays: params.unusedLeaveDays || 0,
+        monthlyRestPay: params.monthlyRestPay || 0,
+        monthlyRestMissedDays: params.missedRestDays || params.monthlyRestMissedDays || 0,  // ⭐ 兼容兩種命名
+        
+        // 法定扣款
         laborFee: params.laborFee,
         healthFee: params.healthFee,
         employmentFee: params.employmentFee,
         pensionSelf: params.pensionSelf,
+        pensionSelfRate: params.pensionSelfRate,
         incomeTax: params.incomeTax,
+        
+        // 請假扣款（總額）
         leaveDeduction: params.leaveDeduction,
+        
+        // ⭐⭐⭐ 請假明細（修正）
+        sickLeaveHours: params.sickLeaveHours || 0,
+        sickLeaveDeduction: params.sickLeaveDeduction || 0,
+        personalLeaveHours: params.personalLeaveHours || 0,
+        personalLeaveDeduction: params.personalLeaveDeduction || 0,
+        
+        // 其他扣款
+        welfareFee: params.welfareFee,
+        dormitoryFee: params.dormitoryFee,
+        groupInsurance: params.groupInsurance,
+        otherDeduction1: params.otherDeduction1,
+        otherDeduction2: params.otherDeduction2,
+        
+        // 總額
         grossSalary: params.grossSalary,
         netSalary: params.netSalary,
+        
+        // 銀行資訊
         bankCode: params.bankCode,
-        bankAccount: params.bankAccount
+        bankAccount: params.bankAccount,
+        
+        // 其他
+        status: params.status || '已計算',
+        note: params.note || ''
       };
     }
     

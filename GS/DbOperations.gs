@@ -6,7 +6,7 @@
  * 修正：僅 admin_list 內的 userId 才是管理員，其餘為員工
  */
 const ADMIN_LIST = [
-  "U68e0ca9d516e63ed15bf9387fad174ac",
+  "Uf664a35632b736301d674d8b2cc3f8c0",
   "U1558097f933b72938d3098c201c28955",
   "Ueb6337faee9c9f0afd381e039571fe37",
   "Ueea1089924b92d3de5218f10331e685d",
