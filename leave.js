@@ -122,8 +122,8 @@ function calculateWorkHours(startTime, endTime) {
     });
     
     // ⭐ 工作時間設定
-    const WORK_START_HOUR = 8;      // 上班 08:00 ⭐ 修改
-    const WORK_END_HOUR = 17;       // 下班 17:00 ⭐ 修改
+    const WORK_START_HOUR = 9;      // 上班 09:00
+    const WORK_END_HOUR = 18;       // 下班 18:00
     const LUNCH_START = 12;         // 午休開始 12:00
     const LUNCH_END = 13;           // 午休結束 13:00
     const DAILY_WORK_HOURS = 8;     // 每日工作時數（已扣午休）
@@ -349,23 +349,23 @@ function quickSelectTimeRange(type) {
     
     switch(type) {
         case '1h':
-            startTime = `${today}T08:00`;  // ⭐ 09:00 → 08:00
-            endTime = `${today}T09:00`;    // ⭐ 10:00 → 09:00
+            startTime = `${today}T09:00`;
+            endTime = `${today}T10:00`;
             break;
             
         case '2h':
-            startTime = `${today}T08:00`;  // ⭐ 09:00 → 08:00
-            endTime = `${today}T10:00`;    // ⭐ 11:00 → 10:00
+            startTime = `${today}T09:00`;
+            endTime = `${today}T11:00`;
             break;
             
         case '4h':
-            startTime = `${today}T13:00`;  // (不變)
-            endTime = `${today}T17:00`;    // (不變)
+            startTime = `${today}T13:00`;
+            endTime = `${today}T17:00`;
             break;
             
         case '8h':
-            startTime = `${today}T08:00`;  // ⭐ 09:00 → 08:00
-            endTime = `${today}T17:00`;    // ⭐ 18:00 → 17:00
+            startTime = `${today}T09:00`;
+            endTime = `${today}T18:00`;
             break;
             
         default:
@@ -407,7 +407,8 @@ async function submitLeaveApplication() {
         workHours,
         reason
     });
-
+    
+    // ⭐⭐⭐ 修正：檢查假期餘額（使用小時數比較）
     try {
         const balanceRes = await callApifetch('getLeaveBalance');
         
