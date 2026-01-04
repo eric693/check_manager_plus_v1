@@ -656,18 +656,50 @@ function displayEmployeeSalary(data) {
     safeSet('detail-other-deduction-1', formatCurrency(data['其他扣款1'] || 0));
     safeSet('detail-other-deduction-2', formatCurrency(data['其他扣款2'] || 0));
     
-    // 銀行資訊
     let bankCode = data['銀行代碼'];
     const bankAccount = data['銀行帳號'];
-    
+
+    // ⭐⭐⭐ 新增容錯處理
     if (bankCode) {
-        bankCode = String(bankCode).padStart(3, '0');
+        // 如果是日期格式（包含 T 或 -），嘗試提取前 3 位數字
+        const bankCodeStr = String(bankCode);
+        
+        if (bankCodeStr.includes('T') || bankCodeStr.includes('-')) {
+            console.warn('⚠️ 檢測到銀行代碼格式異常，嘗試修正:', bankCodeStr);
+            
+            // 提取所有數字
+            const numbers = bankCodeStr.match(/\d+/g);
+            
+            if (numbers && numbers.length > 0) {
+                // 取第一組數字（通常是年份的前幾位）
+                const firstNum = numbers[0];
+                
+                // 如果是 4 位數（例如 1902），取後 3 位
+                if (firstNum.length === 4) {
+                    bankCode = firstNum.substring(1); // "1902" → "902"
+                } else if (firstNum.length >= 3) {
+                    bankCode = firstNum.substring(0, 3); // 取前 3 位
+                }
+                
+                console.log('✅ 修正後的銀行代碼:', bankCode);
+            } else {
+                // 無法修正，設為空
+                bankCode = '';
+                console.error('❌ 無法修正銀行代碼，已設為空');
+            }
+        }
+        
+        // 補零到 3 位數
+        if (bankCode && bankCode.length < 3) {
+            bankCode = String(bankCode).padStart(3, '0');
+        }
     }
-    
+
+    // 然後繼續原本的邏輯
     safeSet('detail-bank-name', getBankName(bankCode));
     safeSet('detail-bank-account', bankAccount || '--');
-    
-    console.log('✅ 薪資明細顯示完成（完整版 - 支援時薪 + 工時統計 + 請假扣款明細）');
+
+    console.log('✅ 薪資明細顯示完成');
 }
 
 /**
