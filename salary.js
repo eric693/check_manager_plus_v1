@@ -530,7 +530,7 @@ function displayEmployeeSalary(data) {
             const workHoursSummary = document.createElement('div');
             workHoursSummary.className = 'work-hours-summary mb-3 p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg';
             
-            let summaryHTML = '<div class="text-sm font-semibold text-blue-300 mb-2">📊 本月工時統計</div>';
+            let summaryHTML = '<div class="text-sm font-semibold text-blue-300 mb-2">本月工時統計</div>';
             
             if (isHourly && totalWorkHours > 0) {
                 summaryHTML += `
