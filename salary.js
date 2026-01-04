@@ -424,7 +424,7 @@ async function loadWorkHoursCard(yearMonth, salaryData) {
 }
 
 /**
- * ✅ 顯示薪資明細（完整版 - 支援時薪顯示 + 工時統計）
+ * ✅ 顯示薪資明細（完整版 - 支援時薪顯示 + 工時統計 + 請假扣款明細）
  */
 function displayEmployeeSalary(data) {
     console.log('顯示薪資明細（完整版）:', data);
@@ -569,6 +569,7 @@ function displayEmployeeSalary(data) {
     safeSet('detail-other-allowance-1', formatCurrency(data['其他津貼1'] || 0));
     safeSet('detail-other-allowance-2', formatCurrency(data['其他津貼2'] || 0));
     safeSet('detail-other-allowance-3', formatCurrency(data['其他津貼3'] || 0));
+    
     // ⭐⭐⭐ 修正：兼容兩種格式（camelCase 和中文欄位）
     const weekdayPay = data.weekdayOvertimePay !== undefined 
         ? data.weekdayOvertimePay 
@@ -604,8 +605,26 @@ function displayEmployeeSalary(data) {
     safeSet('detail-monthly-rest-days', `${missedRestDays} 天`);
 
     console.log(`🌙 月休補薪: ${monthlyRestPay} 元（未休 ${missedRestDays} 天）`);
+
+    safeSet('detail-weekday-overtime', formatCurrency(weekdayPay));
+    safeSet('detail-restday-overtime', formatCurrency(restdayPay));
+    safeSet('detail-holiday-overtime', formatCurrency(holidayPay));
     
-    // ⭐⭐⭐ 新增：請假扣款明細顯示
+    // ========== 扣款項目區塊開始 ==========
+    safeSet('detail-labor-fee', formatCurrency(data['勞保費']));
+    safeSet('detail-health-fee', formatCurrency(data['健保費']));
+    safeSet('detail-employment-fee', formatCurrency(data['就業保險費']));
+    
+    const pensionRate = parseFloat(data['勞退自提率']) || 0;
+    safeSet('detail-pension-rate', `${pensionRate}%`);
+    
+    safeSet('detail-pension-self', formatCurrency(data['勞退自提']));
+    safeSet('detail-income-tax', formatCurrency(data['所得稅']));
+    
+    // ⭐⭐⭐ 請假扣款總額
+    safeSet('detail-leave-deduction', formatCurrency(data['請假扣款']));
+    
+    // ⭐⭐⭐ 請假扣款明細（讀取並顯示）
     const sickLeaveHours = parseFloat(data['病假時數'] || data.sickLeaveHours) || 0;
     const sickLeaveDeduction = parseFloat(data['病假扣款'] || data.sickLeaveDeduction) || 0;
     const personalLeaveHours = parseFloat(data['事假時數'] || data.personalLeaveHours) || 0;
@@ -619,7 +638,7 @@ function displayEmployeeSalary(data) {
     console.log(`🏥 病假: ${sickLeaveHours}h → ${sickLeaveDeduction} 元`);
     console.log(`📝 事假: ${personalLeaveHours}h → ${personalLeaveDeduction} 元`);
     
-    // ⭐⭐⭐ 新增：如果有請假記錄，自動展開明細
+    // ⭐⭐⭐ 如果有請假記錄，自動展開明細
     if (sickLeaveHours > 0 || personalLeaveHours > 0) {
         const detailEl = document.getElementById('leave-deduction-detail');
         const toggleEl = document.getElementById('leave-deduction-toggle');
@@ -629,29 +648,13 @@ function displayEmployeeSalary(data) {
             toggleEl.textContent = '▲';
         }
     }
-
-    safeSet('detail-weekday-overtime', formatCurrency(weekdayPay));
-    safeSet('detail-restday-overtime', formatCurrency(restdayPay));
-    safeSet('detail-holiday-overtime', formatCurrency(holidayPay));
-    // 扣款項目
-    safeSet('detail-labor-fee', formatCurrency(data['勞保費']));
-    safeSet('detail-health-fee', formatCurrency(data['健保費']));
-    safeSet('detail-employment-fee', formatCurrency(data['就業保險費']));
     
-    const pensionRate = parseFloat(data['勞退自提率']) || 0;
-    safeSet('detail-pension-rate', `${pensionRate}%`);
-    
-    safeSet('detail-pension-self', formatCurrency(data['勞退自提']));
-    safeSet('detail-income-tax', formatCurrency(data['所得稅']));
-    safeSet('detail-leave-deduction', formatCurrency(data['請假扣款']));
-    
-    const otherDeductions = 
-        (parseFloat(data['福利金扣款']) || 0) +
-        (parseFloat(data['宿舍費用']) || 0) +
-        (parseFloat(data['團保費用']) || 0) +
-        (parseFloat(data['其他扣款1']) || 0) +  
-        (parseFloat(data['其他扣款2']) || 0);   
-    safeSet('detail-other-deductions', formatCurrency(otherDeductions));
+    // ⭐⭐⭐ 其他扣款（分別顯示）
+    safeSet('detail-welfare-deduction', formatCurrency(data['福利金扣款'] || 0));
+    safeSet('detail-dormitory-deduction', formatCurrency(data['宿舍費用'] || 0));
+    safeSet('detail-group-insurance-deduction', formatCurrency(data['團保費用'] || 0));
+    safeSet('detail-other-deduction-1', formatCurrency(data['其他扣款1'] || 0));
+    safeSet('detail-other-deduction-2', formatCurrency(data['其他扣款2'] || 0));
     
     // 銀行資訊
     let bankCode = data['銀行代碼'];
@@ -664,7 +667,7 @@ function displayEmployeeSalary(data) {
     safeSet('detail-bank-name', getBankName(bankCode));
     safeSet('detail-bank-account', bankAccount || '--');
     
-    console.log('✅ 薪資明細顯示完成（完整版 - 支援時薪 + 工時統計）');
+    console.log('✅ 薪資明細顯示完成（完整版 - 支援時薪 + 工時統計 + 請假扣款明細）');
 }
 
 /**
