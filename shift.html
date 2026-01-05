@@ -910,9 +910,27 @@
         <div id="batch-tab" class="tab-content">
             <div class="shift-card">
                 <h2 data-i18n="SHIFT_BATCH_TITLE">批量新增排班</h2>
-                <p style="color: #666; margin-bottom: 20px;" data-i18n="SHIFT_BATCH_DESC">
-                    上傳 CSV 或 Excel 檔案批量新增排班。檔案格式: 員工ID, 員工姓名, 日期, 班別, 上班時間, 下班時間, 地點, 備註
-                </p>
+                
+                <!-- ⭐⭐⭐ 修正：更詳細的說明 -->
+                <div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 8px 0; color: #1976d2;">📋 檔案格式說明</h4>
+                    <p style="margin: 0 0 8px 0; color: #666;">
+                        上傳 CSV 檔案批量新增排班。請按照以下格式準備資料：
+                    </p>
+                    <ul style="margin: 0; padding-left: 20px; color: #666;">
+                        <li><strong>第 1 欄</strong>：員工ID（必填，LINE User ID）</li>
+                        <li><strong>第 2 欄</strong>：員工姓名（必填）</li>
+                        <li><strong>第 3 欄</strong>：日期（必填，格式：YYYY-MM-DD）</li>
+                        <li><strong>第 4 欄</strong>：班別（必填，可選：早班/中班/晚班/全日班/排休/自訂）</li>
+                        <li><strong>第 5 欄</strong>：上班時間（必填，格式：HH:MM）</li>
+                        <li><strong>第 6 欄</strong>：下班時間（必填，格式：HH:MM）</li>
+                        <li><strong>第 7 欄</strong>：地點（必填）</li>
+                        <li><strong>第 8 欄</strong>：備註（選填）</li>
+                    </ul>
+                    <p style="margin: 8px 0 0 0; color: #1976d2; font-weight: 500;">
+                        💡 提示：請先下載範本檔案，再修改資料後上傳
+                    </p>
+                </div>
                 
                 <div class="batch-upload-area" id="upload-area">
                     <div class="empty-state-icon">📄</div>

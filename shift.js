@@ -913,45 +913,114 @@ function handleBatchFile(file) {
 }
 
 function parseBatchData(content, filename) {
-    // 移除 BOM (如果有的話)
+    // 移除 BOM
     content = content.replace(/^\ufeff/, '');
     
     const lines = content.split('\n');
     const data = [];
+    
+    console.log('📋 開始解析 CSV 檔案:', filename);
+    console.log('   總行數:', lines.length);
+    console.log('   標題列:', lines[0]);
+    
+    // ✅ 驗證標題列
+    const expectedHeaders = '員工ID,員工姓名,日期,班別,上班時間,下班時間,地點,備註';
+    const actualHeaders = lines[0].trim().replace(/"/g, '');
+    
+    if (actualHeaders !== expectedHeaders) {
+        console.warn('⚠️ 標題列格式不符:');
+        console.warn('   預期:', expectedHeaders);
+        console.warn('   實際:', actualHeaders);
+    }
     
     // 從第二行開始(跳過標題)
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
         
-        // ⭐ 正確處理 CSV 引號
         const values = parseCSVLine(line);
         
-        // 檢查是否有足夠的欄位(至少 7 個)
-        if (values.length >= 7) {
-            // 跳過排班ID欄位(第一個),從員工ID開始
-            const shift = {
-                employeeId: values[0].trim(),      // 第 1 欄: 員工ID ✅
-                employeeName: values[1].trim(),    // 第 2 欄: 員工姓名 ✅
-                date: values[2].trim(),            // 第 3 欄: 日期 ✅
-                shiftType: values[3].trim(),       // 第 4 欄: 班別 ✅
-                startTime: values[4].trim(),       // 第 5 欄: 上班時間 ✅
-                endTime: values[5].trim(),         // 第 6 欄: 下班時間 ✅
-                location: values[6].trim() || '',  // 第 7 欄: 地點 ✅
-                note: values[7]?.trim() || ''      // 第 8 欄: 備註 ✅
-            };
-            
-            // 驗證必填欄位
-            if (shift.employeeId && shift.date && shift.shiftType) {
-                data.push(shift);
-            } else {
-                console.warn('第 ' + (i+1) + ' 行資料不完整,已略過');
-            }
+        console.log(`   第 ${i+1} 行: ${values.length} 個欄位`);
+        
+        // ✅ 修正：檢查是否至少有 7 個欄位
+        if (values.length < 7) {
+            console.warn(`   ⚠️ 第 ${i+1} 行: 欄位不足（需要至少 7 個，實際 ${values.length} 個）`);
+            console.warn(`   內容: ${line}`);
+            continue;
         }
+        
+        // ✅ 從第 1 欄開始讀取（8 欄格式）
+        const shift = {
+            employeeId: values[0]?.trim() || '',      // 第 1 欄: 員工ID
+            employeeName: values[1]?.trim() || '',    // 第 2 欄: 員工姓名
+            date: values[2]?.trim() || '',            // 第 3 欄: 日期
+            shiftType: values[3]?.trim() || '',       // 第 4 欄: 班別
+            startTime: values[4]?.trim() || '',       // 第 5 欄: 上班時間
+            endTime: values[5]?.trim() || '',         // 第 6 欄: 下班時間
+            location: values[6]?.trim() || '',        // 第 7 欄: 地點
+            note: values[7]?.trim() || ''             // 第 8 欄: 備註（選填）
+        };
+        
+        // ✅ 驗證必填欄位
+        if (!shift.employeeId) {
+            console.warn(`   ❌ 第 ${i+1} 行: 缺少員工ID`);
+            continue;
+        }
+        
+        if (!shift.employeeName) {
+            console.warn(`   ❌ 第 ${i+1} 行: 缺少員工姓名`);
+            continue;
+        }
+        
+        if (!shift.date) {
+            console.warn(`   ❌ 第 ${i+1} 行: 缺少日期`);
+            continue;
+        }
+        
+        if (!shift.shiftType) {
+            console.warn(`   ❌ 第 ${i+1} 行: 缺少班別`);
+            continue;
+        }
+        
+        // ✅ 驗證班別是否合法
+        const validShiftTypes = ['早班', '中班', '晚班', '全日班', '排休', '自訂'];
+        if (!validShiftTypes.includes(shift.shiftType)) {
+            console.warn(`   ❌ 第 ${i+1} 行: 班別「${shift.shiftType}」不正確`);
+            console.warn(`   有效班別: ${validShiftTypes.join('、')}`);
+            continue;
+        }
+        
+        // ✅ 驗證日期格式（YYYY-MM-DD）
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(shift.date)) {
+            console.warn(`   ❌ 第 ${i+1} 行: 日期格式不正確「${shift.date}」`);
+            console.warn(`   正確格式: YYYY-MM-DD (例如: 2026-01-05)`);
+            continue;
+        }
+        
+        // ✅ 驗證時間格式（HH:MM）
+        if (!/^\d{2}:\d{2}$/.test(shift.startTime)) {
+            console.warn(`   ❌ 第 ${i+1} 行: 上班時間格式不正確「${shift.startTime}」`);
+            console.warn(`   正確格式: HH:MM (例如: 08:00)`);
+            continue;
+        }
+        
+        if (!/^\d{2}:\d{2}$/.test(shift.endTime)) {
+            console.warn(`   ❌ 第 ${i+1} 行: 下班時間格式不正確「${shift.endTime}」`);
+            console.warn(`   正確格式: HH:MM (例如: 17:00)`);
+            continue;
+        }
+        
+        console.log(`   ✅ 第 ${i+1} 行: ${shift.employeeName} - ${shift.shiftType}`);
+        data.push(shift);
     }
     
+    console.log('');
+    console.log('📊 解析結果:');
+    console.log(`   成功: ${data.length} 筆`);
+    console.log(`   失敗: ${lines.length - 1 - data.length} 筆`);
+    
     if (data.length === 0) {
-        showMessage(t('SHIFT_BATCH_NO_DATA'), 'error');
+        showMessage('❌ CSV 檔案格式不正確或無有效資料', 'error');
         return;
     }
     
@@ -1099,16 +1168,16 @@ function cancelBatchUpload() {
 }
 
 function downloadTemplate() {
-    // ⭐ 修正1：加入「排班ID」欄位
-    // ⭐ 修正2：使用實際的員工ID格式
-    // ⭐ 修正3：提供多種班別範例
+    // ✅ 修正：移除「排班ID」欄位，改為 8 欄格式
+    // ✅ 使用實際的員工ID格式
+    // ✅ 提供多種班別範例
     const template = 
-        '排班ID,員工ID,員工姓名,日期,班別,上班時間,下班時間,地點,備註\n' +
-        ',Uf664a35632b736301d674d8b2cc3f8c0,測試,2026-01-05,全日班,08:00,17:00,品冠食品廠,\n' +
-        ',Uf664a35632b736301d674d8b2cc3f8c0,測試,2026-01-05,早班,08:00,16:00,測試,測試排班\n' +
-        ',Uf664a35632b736301d674d8b2cc3f8c0,測試,2026-01-06,中班,12:00,20:00,高城八街,\n' +
-        ',Uf664a35632b736301d674d8b2cc3f8c0,測試,2026-01-06,晚班,16:00,00:00,青埔,\n' +
-        ',Uf664a35632b736301d674d8b2cc3f8c0,測試,2026-01-07,排休,00:00,00:00,高城八街,休假日';
+        '員工ID,員工姓名,日期,班別,上班時間,下班時間,地點,備註\n' +
+        'Uf664a35632b736301d674d8b2cc3f8c0,測試員工,2026-01-05,全日班,08:00,17:00,品冠食品廠,\n' +
+        'Uf664a35632b736301d674d8b2cc3f8c0,測試員工,2026-01-06,早班,08:00,16:00,測試地點,測試排班\n' +
+        'Uf664a35632b736301d674d8b2cc3f8c0,測試員工,2026-01-07,中班,12:00,20:00,高城八街,\n' +
+        'Uf664a35632b736301d674d8b2cc3f8c0,測試員工,2026-01-08,晚班,16:00,00:00,青埔,\n' +
+        'Uf664a35632b736301d674d8b2cc3f8c0,測試員工,2026-01-09,排休,00:00,00:00,高城八街,休假日';
     
     downloadCSV(template, '排班範本.csv');
     showMessage('✅ 範本檔案已下載，請參考格式填寫', 'success');
