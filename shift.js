@@ -1064,6 +1064,132 @@ function parseCSVLine(line) {
     return values;
 }
 
+
+let isUploading = false; // ⭐ 新增：上傳狀態標記
+
+async function confirmBatchUpload() {
+    if (batchData.length === 0) return;
+    
+    // ⭐⭐⭐ 防止重複點擊
+    if (isUploading) {
+        console.warn('⚠️ 正在上傳中，請勿重複點擊');
+        showMessage('正在上傳中，請稍候...', 'warning');
+        return;
+    }
+    
+    isUploading = true; // ⭐ 設定為上傳中
+    
+    // ⭐ 禁用「確認上傳」按鈕
+    const confirmBtn = document.querySelector('#batch-preview .btn-primary');
+    const originalText = confirmBtn ? confirmBtn.textContent : '';
+    
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = '上傳中...';
+        confirmBtn.style.opacity = '0.6';
+    }
+    
+    try {
+        const token = localStorage.getItem('sessionToken');
+        
+        console.log('📤 準備上傳批量資料:', batchData.length, '筆');
+        
+        // ⭐⭐⭐ 關鍵：檢查資料中是否有重複
+        const seen = new Set();
+        const uniqueData = [];
+        
+        batchData.forEach((shift, index) => {
+            const key = `${shift.employeeId}_${shift.date}`;
+            if (seen.has(key)) {
+                console.warn(`⚠️ 第 ${index + 1} 筆重複: ${shift.employeeName} - ${shift.date}`);
+            } else {
+                seen.add(key);
+                uniqueData.push(shift);
+            }
+        });
+        
+        if (uniqueData.length < batchData.length) {
+            const duplicateCount = batchData.length - uniqueData.length;
+            console.warn(`⚠️ 已移除 ${duplicateCount} 筆重複資料`);
+            showMessage(`已移除 ${duplicateCount} 筆重複資料`, 'warning');
+        }
+        
+        console.log('📊 實際上傳筆數: ' + uniqueData.length);
+        
+        const shiftsJson = encodeURIComponent(JSON.stringify(uniqueData));
+        const url = `${apiUrl}?action=batchAddShifts&token=${token}&shiftsArray=${shiftsJson}`;
+        
+        const callbackName = 'batchUploadCallback_' + Date.now();
+        
+        return new Promise((resolve, reject) => {
+            window[callbackName] = function(data) {
+                console.log('📥 批量上傳回應:', data);
+                
+                // 清理
+                delete window[callbackName];
+                if (document.body.contains(script)) {
+                    document.body.removeChild(script);
+                }
+                
+                // ⭐ 恢復按鈕
+                isUploading = false;
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = originalText;
+                    confirmBtn.style.opacity = '1';
+                }
+                
+                if (data.ok) {
+                    showMessage(data.msg || '批量上傳成功', 'success');
+                    cancelBatchUpload();
+                    switchTab('view');
+                    loadShifts();
+                    resolve(data);
+                } else {
+                    showMessage(data.msg || '批量上傳失敗', 'error');
+                    reject(new Error(data.msg));
+                }
+            };
+            
+            const script = document.createElement('script');
+            script.src = url + `&callback=${callbackName}`;
+            script.onerror = function() {
+                console.error('❌ 批量上傳失敗: 無法載入腳本');
+                delete window[callbackName];
+                if (document.body.contains(script)) {
+                    document.body.removeChild(script);
+                }
+                
+                // ⭐ 恢復按鈕
+                isUploading = false;
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = originalText;
+                    confirmBtn.style.opacity = '1';
+                }
+                
+                showMessage('網路錯誤，請重試', 'error');
+                reject(new Error('Network error'));
+            };
+            
+            document.body.appendChild(script);
+        });
+        
+    } catch (error) {
+        console.error('❌ 批量上傳失敗:', error);
+        
+        // ⭐ 恢復按鈕
+        isUploading = false;
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = originalText;
+            confirmBtn.style.opacity = '1';
+        }
+        
+        showMessage('批量上傳失敗: ' + error.message, 'error');
+    }
+}
+
 function displayBatchPreview(data) {
     const previewDiv = document.getElementById('batch-preview');
     const tableDiv = document.getElementById('preview-table');
@@ -1098,63 +1224,63 @@ function displayBatchPreview(data) {
     document.getElementById('upload-area').style.display = 'none';
 }
 
-async function confirmBatchUpload() {
-    if (batchData.length === 0) return;
+// async function confirmBatchUpload() {
+//     if (batchData.length === 0) return;
     
-    try {
-        const token = localStorage.getItem('sessionToken');
+//     try {
+//         const token = localStorage.getItem('sessionToken');
         
-        console.log('📤 準備上傳批量資料:', batchData.length, '筆');
+//         console.log('📤 準備上傳批量資料:', batchData.length, '筆');
         
-        // ⭐ 改用 GET 請求避免 CORS 問題
-        // 將資料轉成 JSON 字串並編碼
-        const shiftsJson = encodeURIComponent(JSON.stringify(batchData));
+//         // ⭐ 改用 GET 請求避免 CORS 問題
+//         // 將資料轉成 JSON 字串並編碼
+//         const shiftsJson = encodeURIComponent(JSON.stringify(batchData));
         
-        const url = `${apiUrl}?action=batchAddShifts&token=${token}&shiftsArray=${shiftsJson}`;
+//         const url = `${apiUrl}?action=batchAddShifts&token=${token}&shiftsArray=${shiftsJson}`;
         
-        // 使用 JSONP 方式呼叫
-        const callbackName = 'batchUploadCallback_' + Date.now();
+//         // 使用 JSONP 方式呼叫
+//         const callbackName = 'batchUploadCallback_' + Date.now();
         
-        return new Promise((resolve, reject) => {
-            // 建立回調函數
-            window[callbackName] = function(data) {
-                console.log('📥 批量上傳回應:', data);
+//         return new Promise((resolve, reject) => {
+//             // 建立回調函數
+//             window[callbackName] = function(data) {
+//                 console.log('📥 批量上傳回應:', data);
                 
-                // 清理
-                delete window[callbackName];
-                document.body.removeChild(script);
+//                 // 清理
+//                 delete window[callbackName];
+//                 document.body.removeChild(script);
                 
-                if (data.ok) {
-                    showMessage(data.msg || data.message || t('SHIFT_BATCH_UPLOAD_SUCCESS'), 'success');
-                    cancelBatchUpload();
-                    switchTab('view');
-                    loadShifts();
-                    resolve(data);
-                } else {
-                    showMessage(data.msg || data.message || t('SHIFT_BATCH_UPLOAD_FAILED'), 'error');
-                    reject(new Error(data.msg));
-                }
-            };
+//                 if (data.ok) {
+//                     showMessage(data.msg || data.message || t('SHIFT_BATCH_UPLOAD_SUCCESS'), 'success');
+//                     cancelBatchUpload();
+//                     switchTab('view');
+//                     loadShifts();
+//                     resolve(data);
+//                 } else {
+//                     showMessage(data.msg || data.message || t('SHIFT_BATCH_UPLOAD_FAILED'), 'error');
+//                     reject(new Error(data.msg));
+//                 }
+//             };
             
-            // 建立 script 標籤
-            const script = document.createElement('script');
-            script.src = url + `&callback=${callbackName}`;
-            script.onerror = function() {
-                console.error('❌ 批量上傳失敗: 無法載入腳本');
-                delete window[callbackName];
-                document.body.removeChild(script);
-                showMessage(t('SHIFT_BATCH_NETWORK_ERROR'), 'error');
-                reject(new Error('Network error'));
-            };
+//             // 建立 script 標籤
+//             const script = document.createElement('script');
+//             script.src = url + `&callback=${callbackName}`;
+//             script.onerror = function() {
+//                 console.error('❌ 批量上傳失敗: 無法載入腳本');
+//                 delete window[callbackName];
+//                 document.body.removeChild(script);
+//                 showMessage(t('SHIFT_BATCH_NETWORK_ERROR'), 'error');
+//                 reject(new Error('Network error'));
+//             };
             
-            document.body.appendChild(script);
-        });
+//             document.body.appendChild(script);
+//         });
         
-    } catch (error) {
-        console.error('❌ 批量上傳失敗:', error);
-        showMessage(t('SHIFT_BATCH_UPLOAD_ERROR') + ': ' + error.message, 'error');
-    }
-}
+//     } catch (error) {
+//         console.error('❌ 批量上傳失敗:', error);
+//         showMessage(t('SHIFT_BATCH_UPLOAD_ERROR') + ': ' + error.message, 'error');
+//     }
+// }
 
 function cancelBatchUpload() {
     batchData = [];
