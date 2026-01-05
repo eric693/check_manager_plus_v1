@@ -931,14 +931,14 @@ function parseBatchData(content, filename) {
         if (values.length >= 7) {
             // 跳過排班ID欄位(第一個),從員工ID開始
             const shift = {
-                employeeId: values[1],      // 第 2 欄: 員工ID
-                employeeName: values[2],    // 第 3 欄: 員工姓名
-                date: values[3],            // 第 4 欄: 日期
-                shiftType: values[4],       // 第 5 欄: 班別
-                startTime: values[5],       // 第 6 欄: 上班時間
-                endTime: values[6],         // 第 7 欄: 下班時間
-                location: values[7] || '',  // 第 8 欄: 地點
-                note: values[8] || ''       // 第 9 欄: 備註
+                employeeId: values[0].trim(),      // 第 1 欄: 員工ID ✅
+                employeeName: values[1].trim(),    // 第 2 欄: 員工姓名 ✅
+                date: values[2].trim(),            // 第 3 欄: 日期 ✅
+                shiftType: values[3].trim(),       // 第 4 欄: 班別 ✅
+                startTime: values[4].trim(),       // 第 5 欄: 上班時間 ✅
+                endTime: values[5].trim(),         // 第 6 欄: 下班時間 ✅
+                location: values[6].trim() || '',  // 第 7 欄: 地點 ✅
+                note: values[7]?.trim() || ''      // 第 8 欄: 備註 ✅
             };
             
             // 驗證必填欄位
