@@ -1224,64 +1224,6 @@ function displayBatchPreview(data) {
     document.getElementById('upload-area').style.display = 'none';
 }
 
-// async function confirmBatchUpload() {
-//     if (batchData.length === 0) return;
-    
-//     try {
-//         const token = localStorage.getItem('sessionToken');
-        
-//         console.log('📤 準備上傳批量資料:', batchData.length, '筆');
-        
-//         // ⭐ 改用 GET 請求避免 CORS 問題
-//         // 將資料轉成 JSON 字串並編碼
-//         const shiftsJson = encodeURIComponent(JSON.stringify(batchData));
-        
-//         const url = `${apiUrl}?action=batchAddShifts&token=${token}&shiftsArray=${shiftsJson}`;
-        
-//         // 使用 JSONP 方式呼叫
-//         const callbackName = 'batchUploadCallback_' + Date.now();
-        
-//         return new Promise((resolve, reject) => {
-//             // 建立回調函數
-//             window[callbackName] = function(data) {
-//                 console.log('📥 批量上傳回應:', data);
-                
-//                 // 清理
-//                 delete window[callbackName];
-//                 document.body.removeChild(script);
-                
-//                 if (data.ok) {
-//                     showMessage(data.msg || data.message || t('SHIFT_BATCH_UPLOAD_SUCCESS'), 'success');
-//                     cancelBatchUpload();
-//                     switchTab('view');
-//                     loadShifts();
-//                     resolve(data);
-//                 } else {
-//                     showMessage(data.msg || data.message || t('SHIFT_BATCH_UPLOAD_FAILED'), 'error');
-//                     reject(new Error(data.msg));
-//                 }
-//             };
-            
-//             // 建立 script 標籤
-//             const script = document.createElement('script');
-//             script.src = url + `&callback=${callbackName}`;
-//             script.onerror = function() {
-//                 console.error('❌ 批量上傳失敗: 無法載入腳本');
-//                 delete window[callbackName];
-//                 document.body.removeChild(script);
-//                 showMessage(t('SHIFT_BATCH_NETWORK_ERROR'), 'error');
-//                 reject(new Error('Network error'));
-//             };
-            
-//             document.body.appendChild(script);
-//         });
-        
-//     } catch (error) {
-//         console.error('❌ 批量上傳失敗:', error);
-//         showMessage(t('SHIFT_BATCH_UPLOAD_ERROR') + ': ' + error.message, 'error');
-//     }
-// }
-
 function cancelBatchUpload() {
     batchData = [];
     const previewDiv = document.getElementById('batch-preview');
