@@ -211,35 +211,104 @@ async function loadDailyOvertimeDetails(yearMonth) {
 }
 
 /**
- * ✅ 載入加班記錄卡片（月薪/時薪通用）
+ * ✅ 載入加班記錄卡片（月薪/時薪通用 - 支援情況三）
  */
 async function loadOvertimeRecordsCard(yearMonth, salaryData) {
-    console.log('📊 載入加班記錄卡片');
+    console.log('📊 載入加班記錄卡片（修正版 - 支援情況三）');
     
-    // ⭐⭐⭐ 修正：兼容兩種格式（camelCase 和中文欄位）
-    const totalOvertimeHours = parseFloat(
-        salaryData.totalOvertimeHours !== undefined 
-            ? salaryData.totalOvertimeHours 
-            : salaryData['總加班時數']
-    ) || 0;
+    // ⭐⭐⭐ 判斷員工類型
+    const employeeType = salaryData['員工類型'] || salaryData.employeeType || '';
+    const salaryType = salaryData['薪資類型'] || salaryData.salaryType || '月薪';
+    const workTimeType = salaryData['工時類型'] || salaryData.workTimeType || '標準工時';
     
-    const weekdayOvertimePay = parseFloat(
-        salaryData.weekdayOvertimePay !== undefined 
-            ? salaryData.weekdayOvertimePay 
-            : salaryData['平日加班費']
-    ) || 0;
+    console.log('📋 員工類型:', employeeType);
+    console.log('   薪資類型:', salaryType);
+    console.log('   工時類型:', workTimeType);
     
-    const restdayOvertimePay = parseFloat(
-        salaryData.restdayOvertimePay !== undefined 
-            ? salaryData.restdayOvertimePay 
-            : salaryData['休息日加班費']
-    ) || 0;
+    let totalOvertimeHours = 0;
+    let weekdayOvertimePay = 0;
+    let restdayOvertimePay = 0;
+    let holidayOvertimePay = 0;
     
-    const holidayOvertimePay = parseFloat(
-        salaryData.holidayOvertimePay !== undefined 
-            ? salaryData.holidayOvertimePay 
-            : salaryData['國定假日加班費']
-    ) || 0;
+    // ⭐⭐⭐ 關鍵修正：根據員工類型讀取欄位
+    if (employeeType === '管理部行政' && salaryType === '月薪' && workTimeType === '標準工時') {
+        // ========================================
+        // 情況三：管理部行政
+        // ========================================
+        console.log('💼 情況三：讀取延長工時加班費');
+        
+        const extFirst2h = parseFloat(
+            salaryData.extendedOvertimeFirst2h !== undefined 
+                ? salaryData.extendedOvertimeFirst2h 
+                : salaryData['延長工時加班費(前2h)']
+        ) || 0;
+        
+        const extAfter2h = parseFloat(
+            salaryData.extendedOvertimeAfter2h !== undefined 
+                ? salaryData.extendedOvertimeAfter2h 
+                : salaryData['延長工時加班費(後2h)']
+        ) || 0;
+        
+        weekdayOvertimePay = extFirst2h + extAfter2h;
+        
+        restdayOvertimePay = parseFloat(
+            salaryData.restdayOvertimePay !== undefined 
+                ? salaryData.restdayOvertimePay 
+                : salaryData['休息日加班費']
+        ) || 0;
+        
+        holidayOvertimePay = parseFloat(
+            salaryData.holidayOvertimePay !== undefined 
+                ? salaryData.holidayOvertimePay 
+                : salaryData['國定假日加班費']
+        ) || 0;
+        
+        totalOvertimeHours = parseFloat(
+            salaryData.totalOvertimeHours !== undefined 
+                ? salaryData.totalOvertimeHours 
+                : salaryData['總加班時數']
+        ) || 0;
+        
+        console.log('📊 情況三加班費:');
+        console.log('   延長工時（前2h）:', extFirst2h);
+        console.log('   延長工時（後2h）:', extAfter2h);
+        console.log('   休息日加班費:', restdayOvertimePay);
+        console.log('   國定假日加班費:', holidayOvertimePay);
+        console.log('   總時數:', totalOvertimeHours);
+        
+    } else {
+        // ========================================
+        // 情況一、二：使用原本邏輯
+        // ========================================
+        totalOvertimeHours = parseFloat(
+            salaryData.totalOvertimeHours !== undefined 
+                ? salaryData.totalOvertimeHours 
+                : salaryData['總加班時數']
+        ) || 0;
+        
+        weekdayOvertimePay = parseFloat(
+            salaryData.weekdayOvertimePay !== undefined 
+                ? salaryData.weekdayOvertimePay 
+                : salaryData['平日加班費']
+        ) || 0;
+        
+        restdayOvertimePay = parseFloat(
+            salaryData.restdayOvertimePay !== undefined 
+                ? salaryData.restdayOvertimePay 
+                : salaryData['休息日加班費']
+        ) || 0;
+        
+        holidayOvertimePay = parseFloat(
+            salaryData.holidayOvertimePay !== undefined 
+                ? salaryData.holidayOvertimePay 
+                : salaryData['國定假日加班費']
+        ) || 0;
+        
+        console.log('📊 情況一/二加班費:');
+        console.log('   平日加班費:', weekdayOvertimePay);
+        console.log('   休息日加班費:', restdayOvertimePay);
+        console.log('   國定假日加班費:', holidayOvertimePay);
+    }
     
     const totalOvertimePay = weekdayOvertimePay + restdayOvertimePay + holidayOvertimePay;
     
@@ -271,7 +340,7 @@ async function loadOvertimeRecordsCard(yearMonth, salaryData) {
                     <p class="text-2xl font-bold text-orange-200">${totalOvertimeHours.toFixed(1)}h</p>
                 </div>
                 <div class="text-center p-3 bg-orange-800/20 rounded-lg">
-                    <p class="text-sm text-orange-300 mb-1">平日加班費</p>
+                    <p class="text-sm text-orange-300 mb-1">${employeeType === '管理部行政' ? '延長工時加班費' : '平日加班費'}</p>
                     <p class="text-xl font-bold text-orange-200">${formatCurrency(weekdayOvertimePay)}</p>
                     <p class="text-xs text-orange-400 mt-1">(前2h ×1.34, 後2h ×1.67)</p>
                 </div>
