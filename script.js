@@ -1093,7 +1093,7 @@ async function submitAdjustPunch(date, type, note) {
         const lng = position.coords.longitude;
         
         // 設定預設時間
-        const datetime = `${date}T${type === '上班' ? '09:00:00' : '18:00:00'}`;
+        const datetime = `${date}T${type === '上班' ? '08:00:00' : '17:00:00'}`;
         
         const params = new URLSearchParams({
             token: sessionToken,
@@ -2450,7 +2450,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             adjustmentFormContainer.innerHTML = formHtml;
             
             const adjustDateTimeInput = document.getElementById("adjustDateTime");
-            const defaultTime = type === '上班' ? '09:00' : '18:00';
+            const defaultTime = type === '上班' ? '08:00' : '17:00';
             adjustDateTimeInput.value = `${date}T${defaultTime}`;
             
             // 👇 新增：平滑滾動到補打卡表單
