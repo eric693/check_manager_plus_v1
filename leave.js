@@ -1,5 +1,16 @@
 // leave.js - 請假系統前端邏輯（完全修正版）
 
+// ⭐⭐⭐ 全域工作時間設定
+const STANDARD_WORK_HOURS = {
+    START_TIME: '08:00',
+    END_TIME: '17:00',
+    WORK_START_HOUR: 8,
+    WORK_END_HOUR: 17,
+    LUNCH_START: 12,
+    LUNCH_END: 13,
+    DAILY_WORK_HOURS: 8
+};
+
 // ⭐ 添加全域標記
 let leaveTabInitialized = false;
 let leaveEventsBound = false;
@@ -121,12 +132,12 @@ function calculateWorkHours(startTime, endTime) {
         end: end.toISOString()
     });
     
-    // ⭐ 工作時間設定
-    const WORK_START_HOUR = 8;      // 上班 08:00 ⭐ 修改
-    const WORK_END_HOUR = 17;       // 下班 17:00 ⭐ 修改
-    const LUNCH_START = 12;         // 午休開始 12:00
-    const LUNCH_END = 13;           // 午休結束 13:00
-    const DAILY_WORK_HOURS = 8;     // 每日工作時數（已扣午休）
+    // ⭐ 使用全域常數
+    const WORK_START_HOUR = STANDARD_WORK_HOURS.WORK_START_HOUR;
+    const WORK_END_HOUR = STANDARD_WORK_HOURS.WORK_END_HOUR;
+    const LUNCH_START = STANDARD_WORK_HOURS.LUNCH_START;
+    const LUNCH_END = STANDARD_WORK_HOURS.LUNCH_END;
+    const DAILY_WORK_HOURS = STANDARD_WORK_HOURS.DAILY_WORK_HOURS;
     
     // 判斷是否同一天
     const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
@@ -179,13 +190,11 @@ function calculateWorkHours(startTime, endTime) {
         let totalWorkHours = 0;
         
         // 🔹 第一天：從請假開始到當天下班
-        // ⭐ 修正：限制開始時間不早於上班時間
         const firstDayStartHour = Math.max(
             start.getHours() + start.getMinutes() / 60,
             WORK_START_HOUR
         );
         
-        // ⭐ 修正：確保不晚於下班時間
         const firstDayEndHour = WORK_END_HOUR;
         
         let firstDayHours = Math.max(0, firstDayEndHour - firstDayStartHour);
@@ -215,11 +224,10 @@ function calculateWorkHours(startTime, endTime) {
         }
         
         // 🔹 最後一天：從上班到請假結束
-        // ⭐ 修正：限制結束時間不早於上班時間、不晚於下班時間
         const lastDayEndHour = Math.min(
             Math.max(
                 end.getHours() + end.getMinutes() / 60,
-                WORK_START_HOUR  // ⭐ 不早於上班時間
+                WORK_START_HOUR
             ),
             WORK_END_HOUR
         );
@@ -249,6 +257,7 @@ function calculateWorkHours(startTime, endTime) {
         return finalHours;
     }
 }
+
 /**
  * 更新工時預覽（即時顯示）
  */
@@ -349,23 +358,23 @@ function quickSelectTimeRange(type) {
     
     switch(type) {
         case '1h':
-            startTime = `${today}T08:00`;  // ⭐ 09:00 → 08:00
-            endTime = `${today}T09:00`;    // ⭐ 10:00 → 09:00
+            startTime = `${today}T${STANDARD_WORK_HOURS.START_TIME}`;
+            endTime = `${today}T09:00`;
             break;
             
         case '2h':
-            startTime = `${today}T08:00`;  // ⭐ 09:00 → 08:00
-            endTime = `${today}T10:00`;    // ⭐ 11:00 → 10:00
+            startTime = `${today}T${STANDARD_WORK_HOURS.START_TIME}`;
+            endTime = `${today}T10:00`;
             break;
             
         case '4h':
-            startTime = `${today}T13:00`;  // (不變)
-            endTime = `${today}T17:00`;    // (不變)
+            startTime = `${today}T13:00`;
+            endTime = `${today}T${STANDARD_WORK_HOURS.END_TIME}`;
             break;
             
         case '8h':
-            startTime = `${today}T08:00`;  // ⭐ 09:00 → 08:00
-            endTime = `${today}T17:00`;    // ⭐ 18:00 → 17:00
+            startTime = `${today}T${STANDARD_WORK_HOURS.START_TIME}`;
+            endTime = `${today}T${STANDARD_WORK_HOURS.END_TIME}`;
             break;
             
         default:

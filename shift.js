@@ -16,6 +16,16 @@ let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth(); // 0-11
 let allMonthShifts = [];
 
+const STANDARD_WORK_HOURS = {
+    START_TIME: '08:00',
+    END_TIME: '17:00',
+    WORK_START_HOUR: 8,
+    WORK_END_HOUR: 17,
+    LUNCH_START: 12,
+    LUNCH_END: 13,
+    DAILY_WORK_HOURS: 8
+};
+
 // 👇 新增：翻譯函式
 function t(code, params = {}) {
     let text = translations[code] || code;
@@ -159,11 +169,12 @@ function setupEventListeners() {
 }
 
 function autoFillShiftTime(shiftType) {
+    // ⭐ 使用全域常數
     const times = {
-        '早班': ['08:00', '16:00'],
+        '早班': [STANDARD_WORK_HOURS.START_TIME, '16:00'],
         '中班': ['12:00', '20:00'],
         '晚班': ['16:00', '00:00'],
-        '全日班': ['09:00', '18:00'],
+        '全日班': [STANDARD_WORK_HOURS.START_TIME, STANDARD_WORK_HOURS.END_TIME], // ⭐ 修改
         '排休': ['00:00', '00:00'] 
     };
     
@@ -191,7 +202,6 @@ function autoFillShiftTime(shiftType) {
         endTimeInput.disabled = false;
     }
 }
-
 // ==================== 員工載入函式（完整除錯版） ====================
 
 /**
@@ -1236,13 +1246,11 @@ function cancelBatchUpload() {
 }
 
 function downloadTemplate() {
-    // ✅ 修正：移除「排班ID」欄位，改為 8 欄格式
-    // ✅ 使用實際的員工ID格式
-    // ✅ 提供多種班別範例
+    // ✅ 使用全域常數更新範本
     const template = 
         '員工ID,員工姓名,日期,班別,上班時間,下班時間,地點,備註\n' +
-        'Uf664a35632b736301d674d8b2cc3f8c0,測試員工,2026-01-05,全日班,08:00,17:00,品冠食品廠,\n' +
-        'Uf664a35632b736301d674d8b2cc3f8c0,測試員工,2026-01-06,早班,08:00,16:00,測試地點,測試排班\n' +
+        `Uf664a35632b736301d674d8b2cc3f8c0,測試員工,2026-01-05,全日班,${STANDARD_WORK_HOURS.START_TIME},${STANDARD_WORK_HOURS.END_TIME},品冠食品廠,\n` +
+        `Uf664a35632b736301d674d8b2cc3f8c0,測試員工,2026-01-06,早班,${STANDARD_WORK_HOURS.START_TIME},16:00,測試地點,測試排班\n` +
         'Uf664a35632b736301d674d8b2cc3f8c0,測試員工,2026-01-07,中班,12:00,20:00,高城八街,\n' +
         'Uf664a35632b736301d674d8b2cc3f8c0,測試員工,2026-01-08,晚班,16:00,00:00,青埔,\n' +
         'Uf664a35632b736301d674d8b2cc3f8c0,測試員工,2026-01-09,排休,00:00,00:00,高城八街,休假日';

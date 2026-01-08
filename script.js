@@ -8,6 +8,20 @@ let monthDataCache = {}; // 新增：用於快取月份打卡資料
 let userId = localStorage.getItem("sessionUserId");
 let todayShiftCache = null; // 快取今日排班
 let weekShiftCache = null;  // 快取本週排班
+
+// ⭐⭐⭐ 全域工作時間設定
+const STANDARD_WORK_HOURS = {
+    START_TIME: '08:00',
+    END_TIME: '17:00',
+    START_TIME_FULL: '08:00:00',
+    END_TIME_FULL: '17:00:00',
+    WORK_START_HOUR: 8,
+    WORK_END_HOUR: 17,
+    LUNCH_START: 12,
+    LUNCH_END: 13,
+    DAILY_WORK_HOURS: 8
+};
+
 // 載入語系檔
 async function loadTranslations(lang) {
     try {
@@ -992,9 +1006,9 @@ async function updateMonthlyStats(records) {
                 const totalHoursRaw = diffMs / (1000 * 60 * 60);
                 
                 if (totalHoursRaw > 0) {
-                    const lunchBreak = 1;
+                    const lunchBreak = STANDARD_WORK_HOURS.LUNCH_END - STANDARD_WORK_HOURS.LUNCH_START;
                     const netHours = totalHoursRaw - lunchBreak;
-                    overtimeFromPunch = Math.max(0, netHours - 8);
+                    overtimeFromPunch = Math.max(0, netHours - STANDARD_WORK_HOURS.DAILY_WORK_HOURS);
                 }
             } catch (e) {
                 console.error('計算工時失敗:', e);
@@ -1064,7 +1078,7 @@ function calculateFrontendWorkHours(records, totalHoursEl) {
                 const totalHoursRaw = diffMs / (1000 * 60 * 60);
                 
                 if (totalHoursRaw > 0) {
-                    const lunchBreak = 1;
+                    const lunchBreak = STANDARD_WORK_HOURS.LUNCH_END - STANDARD_WORK_HOURS.LUNCH_START;
                     const netHours = totalHoursRaw - lunchBreak;
                     totalHours += netHours;
                 }
@@ -1092,8 +1106,8 @@ async function submitAdjustPunch(date, type, note) {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         
-        // 設定預設時間
-        const datetime = `${date}T${type === '上班' ? '08:00:00' : '17:00:00'}`;
+        // ⭐ 使用全域常數設定預設時間
+        const datetime = `${date}T${type === '上班' ? STANDARD_WORK_HOURS.START_TIME_FULL : STANDARD_WORK_HOURS.END_TIME_FULL}`;
         
         const params = new URLSearchParams({
             token: sessionToken,
@@ -1122,7 +1136,6 @@ async function submitAdjustPunch(date, type, note) {
         showNotification("補打卡失敗", "error");
     }
 }
-
 // 新增一個獨立的渲染函式，以便從快取或 API 回應中調用
 // 在 script.js 中找到 renderCalendarWithData 函數，並修改如下：
 
@@ -3325,16 +3338,14 @@ async function exportEmployeePunchReport() {
                     const diffMs = outTime - inTime;
                     
                     if (diffMs > 0) {
-                        // 計算總工時（小時）
                         const totalHours = diffMs / (1000 * 60 * 60);
                         
-                        // 扣除午休 1 小時
-                        const lunchBreak = 1;
+                        // 扣除午休時間
+                        const lunchBreak = STANDARD_WORK_HOURS.LUNCH_END - STANDARD_WORK_HOURS.LUNCH_START;
                         const netWorkHours = totalHours - lunchBreak;
                         
-                        // 計算加班時數（超過標準工時 8 小時的部分）
-                        const standardWorkHours = 8;
-                        overtimeHours = Math.max(0, netWorkHours - standardWorkHours);
+                        // 計算加班時數（超過標準工時的部分）
+                        overtimeHours = Math.max(0, netWorkHours - STANDARD_WORK_HOURS.DAILY_WORK_HOURS);
                         
                         // 格式化顯示
                         workHoursDecimal = netWorkHours;
