@@ -937,12 +937,12 @@ async function renderCalendar(date) {
 }
 
 /**
- * ✅ 更新本月出勤統計（改用後端計算 - 統一數據源）
+ * ✅ 更新本月出勤統計（完全修正版 - 支援所有記錄類型）
  */
 async function updateMonthlyStats(records) {
     try {
         console.log('📊 開始更新統計資料');
-        console.log('   收到 records:', records);
+        console.log('   收到 records 數量:', records.length);
         
         // 取得 DOM 元素
         const workDaysEl = document.getElementById('stats-work-days-value');
@@ -963,39 +963,51 @@ async function updateMonthlyStats(records) {
         let totalOvertimeHours = 0;
         
         // 處理每一筆記錄
-        records.forEach(record => {
-            console.log(`   處理 ${record.date}:`, record);
+        records.forEach((record, index) => {
+            console.log(`   ${index + 1}. ${record.date} - ${record.reason}`);
             
-            // ⭐⭐⭐ 計算工作天數
-            const punchIn = record.record?.find(r => r.type === '上班');
-            const punchOut = record.record?.find(r => r.type === '下班');
+            // ⭐⭐⭐ 修正：檢查是否有 record 陣列且不為空
+            const hasRecords = record.record && Array.isArray(record.record) && record.record.length > 0;
             
-            if (punchIn && punchOut) {
-                workDays++;
-                console.log(`   → ${record.date} 有完整打卡，工作天數 +1`);
+            if (hasRecords) {
+                const punchIn = record.record.find(r => r.type === '上班');
+                const punchOut = record.record.find(r => r.type === '下班');
+                
+                // 只要有上班或下班任一記錄，就算一天
+                if (punchIn || punchOut) {
+                    workDays++;
+                    console.log(`   → 有打卡記錄，工作天數 +1`);
+                }
             }
             
-            // ⭐⭐⭐ 計算異常記錄
+            // ⭐⭐⭐ 計算異常記錄（涵蓋所有異常狀態）
             const abnormalReasons = [
-                'STATUS_PUNCH_IN_MISSING',
-                'STATUS_PUNCH_OUT_MISSING',
-                'STATUS_REPAIR_PENDING',
-                'STATUS_REPAIR_REJECTED'
+                'STATUS_PUNCH_IN_MISSING',      // 缺上班卡
+                'STATUS_PUNCH_OUT_MISSING',     // 缺下班卡
+                'STATUS_REPAIR_PENDING'         // 補打卡審核中
+            ];
+            
+            // ⭐⭐⭐ 計算正常記錄（包含已核准的補打卡）
+            const normalReasons = [
+                'STATUS_PUNCH_NORMAL',          // 正常打卡
+                'STATUS_REPAIR_APPROVED'        // 補打卡已核准
             ];
             
             if (abnormalReasons.includes(record.reason)) {
                 abnormalCount++;
-                console.log(`   → ${record.date} 異常: ${record.reason}`);
-            } else if (record.reason === 'STATUS_PUNCH_NORMAL' || 
-                       record.reason === 'STATUS_REPAIR_APPROVED') {
+                console.log(`   → 異常: ${record.reason}`);
+            } else if (normalReasons.includes(record.reason)) {
                 normalDays++;
-                console.log(`   → ${record.date} 正常`);
+                console.log(`   → 正常: ${record.reason}`);
             }
             
             // ⭐⭐⭐ 計算加班時數
             if (record.overtime && record.overtime.hours) {
-                totalOvertimeHours += parseFloat(record.overtime.hours);
-                console.log(`   → ${record.date} 加班: ${record.overtime.hours}h`);
+                const hours = parseFloat(record.overtime.hours);
+                if (!isNaN(hours)) {
+                    totalOvertimeHours += hours;
+                    console.log(`   → 加班: ${hours}h`);
+                }
             }
         });
         
