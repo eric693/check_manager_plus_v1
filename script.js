@@ -939,126 +939,208 @@ async function renderCalendar(date) {
 /**
  * ✅ 更新本月出勤統計（改用後端計算 - 統一數據源）
  */
+/**
+ * ✅ 更新本月出勤統計（完整修正版）
+ */
 async function updateMonthlyStats(records) {
-    const totalHoursEl = document.getElementById('stats-total-hours-value');
-    const workDaysEl = document.getElementById('stats-work-days-value');
-    const abnormalCountEl = document.getElementById('stats-abnormal-count-value');
-    const normalDaysEl = document.getElementById('stats-normal-days-value');
-    const overtimeHoursEl = document.getElementById('stats-overtime-hours-value');
-    
-    if (!totalHoursEl || !workDaysEl || !abnormalCountEl || !normalDaysEl) {
-        console.warn('找不到統計元素');
-        return;
-    }
-    
-    // ⭐⭐⭐ 關鍵修改：調用後端 API 獲取總工時
-    const userId = localStorage.getItem('sessionUserId');
-    const year = currentMonthDate.getFullYear();
-    const month = String(currentMonthDate.getMonth() + 1).padStart(2, '0');
-    const yearMonth = `${year}-${month}`;
-    
     try {
-        // 調用後端薪資計算 API（與薪資頁面一致）
-        const res = await callApifetch(
-            `calculateMonthlySalary&employeeId=${userId}&yearMonth=${yearMonth}`
-        );
+        console.log('📊 開始更新統計資料');
+        console.log('   收到 records:', records);
         
-        if (res.ok && res.data) {
-            // ✅ 使用後端計算的總工時（已扣除請假、午休等）
-            const totalWorkHours = parseFloat(res.data.totalWorkHours) || 0;
-            totalHoursEl.textContent = totalWorkHours.toFixed(1);
-            
-            console.log('✅ 使用後端計算工時:', totalWorkHours.toFixed(1), '小時');
-        } else {
-            console.warn('⚠️ 後端 API 失敗，使用前端計算');
-            // 降級方案：如果 API 失敗，使用前端計算
-            calculateFrontendWorkHours(records, totalHoursEl);
+        // 取得 DOM 元素
+        const workDaysEl = document.getElementById('stats-work-days-value');
+        const abnormalCountEl = document.getElementById('stats-abnormal-count-value');
+        const normalDaysEl = document.getElementById('stats-normal-days-value');
+        const overtimeHoursEl = document.getElementById('stats-overtime-hours-value');
+        
+        // 檢查 DOM 元素是否存在
+        if (!workDaysEl || !abnormalCountEl || !normalDaysEl || !overtimeHoursEl) {
+            console.error('❌ 找不到統計 DOM 元素');
+            return;
         }
+        
+        // 初始化計數器
+        let workDays = 0;
+        let abnormalCount = 0;
+        let normalDays = 0;
+        let totalOvertimeHours = 0;
+        
+        // 處理每一筆記錄
+        records.forEach(record => {
+            console.log(`   處理 ${record.date}:`, record);
+            
+            // ⭐⭐⭐ 計算工作天數
+            const punchIn = record.record?.find(r => r.type === '上班');
+            const punchOut = record.record?.find(r => r.type === '下班');
+            
+            if (punchIn && punchOut) {
+                workDays++;
+                console.log(`   → ${record.date} 有完整打卡，工作天數 +1`);
+            }
+            
+            // ⭐⭐⭐ 計算異常記錄
+            const abnormalReasons = [
+                'STATUS_PUNCH_IN_MISSING',
+                'STATUS_PUNCH_OUT_MISSING',
+                'STATUS_REPAIR_PENDING',
+                'STATUS_REPAIR_REJECTED'
+            ];
+            
+            if (abnormalReasons.includes(record.reason)) {
+                abnormalCount++;
+                console.log(`   → ${record.date} 異常: ${record.reason}`);
+            } else if (record.reason === 'STATUS_PUNCH_NORMAL' || 
+                       record.reason === 'STATUS_REPAIR_APPROVED') {
+                normalDays++;
+                console.log(`   → ${record.date} 正常`);
+            }
+            
+            // ⭐⭐⭐ 計算加班時數
+            if (record.overtime && record.overtime.hours) {
+                totalOvertimeHours += parseFloat(record.overtime.hours);
+                console.log(`   → ${record.date} 加班: ${record.overtime.hours}h`);
+            }
+        });
+        
+        // ⭐⭐⭐ 更新 DOM
+        console.log('');
+        console.log('📊 統計結果:');
+        console.log(`   出勤天數: ${workDays}`);
+        console.log(`   異常記錄: ${abnormalCount}`);
+        console.log(`   正常打卡: ${normalDays}`);
+        console.log(`   加班時數: ${totalOvertimeHours}`);
+        
+        workDaysEl.textContent = workDays;
+        abnormalCountEl.textContent = abnormalCount;
+        normalDaysEl.textContent = normalDays;
+        overtimeHoursEl.textContent = totalOvertimeHours > 0 ? totalOvertimeHours.toFixed(1) : '0';
+        
+        console.log('✅ 統計更新完成');
         
     } catch (error) {
-        console.error('❌ 調用後端 API 失敗:', error);
-        // 降級方案：使用前端計算
-        calculateFrontendWorkHours(records, totalHoursEl);
-    }
-    
-    // ⭐ 其他統計數據仍然使用前端計算（因為後端 API 可能沒有提供）
-    let workDays = 0;
-    let abnormalCount = 0;
-    let normalDays = 0;
-    let totalOvertimeHours = 0;
-    
-    records.forEach(record => {
-        // 計算工作天數
-        const punchIn = record.record ? record.record.find(r => r.type === '上班') : null;
-        const punchOut = record.record ? record.record.find(r => r.type === '下班') : null;
-        
-        if (punchIn && punchOut) {
-            workDays++;
-        }
-        
-        // 計算加班時數
-        let overtimeFromPunch = 0;
-        if (punchIn && punchOut) {
-            try {
-                const inTime = new Date(`${record.date} ${punchIn.time}`);
-                const outTime = new Date(`${record.date} ${punchOut.time}`);
-                const diffMs = outTime - inTime;
-                const totalHoursRaw = diffMs / (1000 * 60 * 60);
-                
-                if (totalHoursRaw > 0) {
-                    const lunchBreak = STANDARD_WORK_HOURS.LUNCH_END - STANDARD_WORK_HOURS.LUNCH_START;
-                    const netHours = totalHoursRaw - lunchBreak;
-                    overtimeFromPunch = Math.max(0, netHours - STANDARD_WORK_HOURS.DAILY_WORK_HOURS);
-                }
-            } catch (e) {
-                console.error('計算工時失敗:', e);
-            }
-        }
-        
-        // 檢查手動申請的加班
-        let overtimeFromApplication = 0;
-        if (record.overtime) {
-            const status = String(
-                record.overtime.status || 
-                record.overtime.reviewStatus || 
-                record.overtime.approvalStatus || 
-                ''
-            ).toLowerCase().trim();
-            
-            if (status === 'approved' || status === '已核准') {
-                overtimeFromApplication = parseFloat(record.overtime.hours) || 0;
-            } else if (status === '' && record.overtime.hours) {
-                overtimeFromApplication = parseFloat(record.overtime.hours) || 0;
-            }
-        }
-        
-        const dayOvertimeHours = Math.max(overtimeFromPunch, overtimeFromApplication);
-        totalOvertimeHours += dayOvertimeHours;
-        
-        // 判斷異常記錄
-        const abnormalReasons = [
-            'STATUS_PUNCH_IN_MISSING',
-            'STATUS_PUNCH_OUT_MISSING',
-            'STATUS_REPAIR_PENDING',
-            'STATUS_REPAIR_REJECTED'
-        ];
-        
-        if (abnormalReasons.includes(record.reason)) {
-            abnormalCount++;
-        } else if (record.reason === 'STATUS_PUNCH_NORMAL' || record.reason === 'STATUS_REPAIR_APPROVED') {
-            normalDays++;
-        }
-    });
-    
-    // 更新 DOM
-    workDaysEl.textContent = workDays;
-    abnormalCountEl.textContent = abnormalCount;
-    normalDaysEl.textContent = normalDays;
-    
-    if (overtimeHoursEl) {
-        overtimeHoursEl.textContent = totalOvertimeHours > 0 ? totalOvertimeHours.toFixed(1) : '0';
+        console.error('❌ updateMonthlyStats 錯誤:', error);
     }
 }
+// async function updateMonthlyStats(records) {
+//     const totalHoursEl = document.getElementById('stats-total-hours-value');
+//     const workDaysEl = document.getElementById('stats-work-days-value');
+//     const abnormalCountEl = document.getElementById('stats-abnormal-count-value');
+//     const normalDaysEl = document.getElementById('stats-normal-days-value');
+//     const overtimeHoursEl = document.getElementById('stats-overtime-hours-value');
+    
+//     if (!totalHoursEl || !workDaysEl || !abnormalCountEl || !normalDaysEl) {
+//         console.warn('找不到統計元素');
+//         return;
+//     }
+    
+//     // ⭐⭐⭐ 關鍵修改：調用後端 API 獲取總工時
+//     const userId = localStorage.getItem('sessionUserId');
+//     const year = currentMonthDate.getFullYear();
+//     const month = String(currentMonthDate.getMonth() + 1).padStart(2, '0');
+//     const yearMonth = `${year}-${month}`;
+    
+//     try {
+//         // 調用後端薪資計算 API（與薪資頁面一致）
+//         const res = await callApifetch(
+//             `calculateMonthlySalary&employeeId=${userId}&yearMonth=${yearMonth}`
+//         );
+        
+//         if (res.ok && res.data) {
+//             // ✅ 使用後端計算的總工時（已扣除請假、午休等）
+//             const totalWorkHours = parseFloat(res.data.totalWorkHours) || 0;
+//             totalHoursEl.textContent = totalWorkHours.toFixed(1);
+            
+//             console.log('✅ 使用後端計算工時:', totalWorkHours.toFixed(1), '小時');
+//         } else {
+//             console.warn('⚠️ 後端 API 失敗，使用前端計算');
+//             // 降級方案：如果 API 失敗，使用前端計算
+//             calculateFrontendWorkHours(records, totalHoursEl);
+//         }
+        
+//     } catch (error) {
+//         console.error('❌ 調用後端 API 失敗:', error);
+//         // 降級方案：使用前端計算
+//         calculateFrontendWorkHours(records, totalHoursEl);
+//     }
+    
+//     // ⭐ 其他統計數據仍然使用前端計算（因為後端 API 可能沒有提供）
+//     let workDays = 0;
+//     let abnormalCount = 0;
+//     let normalDays = 0;
+//     let totalOvertimeHours = 0;
+    
+//     records.forEach(record => {
+//         // 計算工作天數
+//         const punchIn = record.record ? record.record.find(r => r.type === '上班') : null;
+//         const punchOut = record.record ? record.record.find(r => r.type === '下班') : null;
+        
+//         if (punchIn && punchOut) {
+//             workDays++;
+//         }
+        
+//         // 計算加班時數
+//         let overtimeFromPunch = 0;
+//         if (punchIn && punchOut) {
+//             try {
+//                 const inTime = new Date(`${record.date} ${punchIn.time}`);
+//                 const outTime = new Date(`${record.date} ${punchOut.time}`);
+//                 const diffMs = outTime - inTime;
+//                 const totalHoursRaw = diffMs / (1000 * 60 * 60);
+                
+//                 if (totalHoursRaw > 0) {
+//                     const lunchBreak = STANDARD_WORK_HOURS.LUNCH_END - STANDARD_WORK_HOURS.LUNCH_START;
+//                     const netHours = totalHoursRaw - lunchBreak;
+//                     overtimeFromPunch = Math.max(0, netHours - STANDARD_WORK_HOURS.DAILY_WORK_HOURS);
+//                 }
+//             } catch (e) {
+//                 console.error('計算工時失敗:', e);
+//             }
+//         }
+        
+//         // 檢查手動申請的加班
+//         let overtimeFromApplication = 0;
+//         if (record.overtime) {
+//             const status = String(
+//                 record.overtime.status || 
+//                 record.overtime.reviewStatus || 
+//                 record.overtime.approvalStatus || 
+//                 ''
+//             ).toLowerCase().trim();
+            
+//             if (status === 'approved' || status === '已核准') {
+//                 overtimeFromApplication = parseFloat(record.overtime.hours) || 0;
+//             } else if (status === '' && record.overtime.hours) {
+//                 overtimeFromApplication = parseFloat(record.overtime.hours) || 0;
+//             }
+//         }
+        
+//         const dayOvertimeHours = Math.max(overtimeFromPunch, overtimeFromApplication);
+//         totalOvertimeHours += dayOvertimeHours;
+        
+//         // 判斷異常記錄
+//         const abnormalReasons = [
+//             'STATUS_PUNCH_IN_MISSING',
+//             'STATUS_PUNCH_OUT_MISSING',
+//             'STATUS_REPAIR_PENDING',
+//             'STATUS_REPAIR_REJECTED'
+//         ];
+        
+//         if (abnormalReasons.includes(record.reason)) {
+//             abnormalCount++;
+//         } else if (record.reason === 'STATUS_PUNCH_NORMAL' || record.reason === 'STATUS_REPAIR_APPROVED') {
+//             normalDays++;
+//         }
+//     });
+    
+//     // 更新 DOM
+//     workDaysEl.textContent = workDays;
+//     abnormalCountEl.textContent = abnormalCount;
+//     normalDaysEl.textContent = normalDays;
+    
+//     if (overtimeHoursEl) {
+//         overtimeHoursEl.textContent = totalOvertimeHours > 0 ? totalOvertimeHours.toFixed(1) : '0';
+//     }
+// }
 
 /**
  * 降級方案：前端計算工時（當後端 API 失敗時使用）
