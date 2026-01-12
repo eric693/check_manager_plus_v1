@@ -1,16 +1,5 @@
 // leave.js - 請假系統前端邏輯（完全修正版）
 
-// ⭐⭐⭐ 全域工作時間設定
-const STANDARD_WORK_HOURS = {
-    START_TIME: '08:00',
-    END_TIME: '17:00',
-    WORK_START_HOUR: 8,
-    WORK_END_HOUR: 17,
-    LUNCH_START: 12,
-    LUNCH_END: 13,
-    DAILY_WORK_HOURS: 8
-};
-
 // ⭐ 添加全域標記
 let leaveTabInitialized = false;
 let leaveEventsBound = false;

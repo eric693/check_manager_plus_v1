@@ -2614,7 +2614,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 👈 新增請假按鈕事件
     tabLeaveBtn.addEventListener('click', () => {
         switchTab('leave-view');
-        initLeaveTab();
+        // initLeaveTab();
     });
 
     tabAdminBtn.addEventListener('click', async () => {
