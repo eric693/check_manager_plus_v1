@@ -939,6 +939,9 @@ async function renderCalendar(date) {
 /**
  * ✅ 更新本月出勤統計（完全修正版 - 支援所有記錄類型）
  */
+/**
+ * ✅ 更新本月出勤統計（改進版 - 寬容檢查）
+ */
 async function updateMonthlyStats(records) {
     try {
         console.log('📊 開始更新統計資料');
@@ -950,10 +953,16 @@ async function updateMonthlyStats(records) {
         const normalDaysEl = document.getElementById('stats-normal-days-value');
         const overtimeHoursEl = document.getElementById('stats-overtime-hours-value');
         
-        // 檢查 DOM 元素是否存在
-        if (!workDaysEl || !abnormalCountEl || !normalDaysEl || !overtimeHoursEl) {
-            console.error('❌ 找不到統計 DOM 元素');
-            return;
+        // ⭐⭐⭐ 寬容檢查：只要有任一元素不存在才報錯
+        const allElementsExist = workDaysEl && abnormalCountEl && normalDaysEl && overtimeHoursEl;
+        
+        if (!allElementsExist) {
+            console.warn('⚠️ 部分統計元素找不到，跳過更新');
+            console.warn('   workDaysEl:', !!workDaysEl);
+            console.warn('   abnormalCountEl:', !!abnormalCountEl);
+            console.warn('   normalDaysEl:', !!normalDaysEl);
+            console.warn('   overtimeHoursEl:', !!overtimeHoursEl);
+            return; // ⭐ 直接返回，不報錯
         }
         
         // 初始化計數器
@@ -966,7 +975,7 @@ async function updateMonthlyStats(records) {
         records.forEach((record, index) => {
             console.log(`   ${index + 1}. ${record.date} - ${record.reason}`);
             
-            // ⭐⭐⭐ 修正：檢查是否有 record 陣列且不為空
+            // 檢查是否有 record 陣列且不為空
             const hasRecords = record.record && Array.isArray(record.record) && record.record.length > 0;
             
             if (hasRecords) {
@@ -980,17 +989,17 @@ async function updateMonthlyStats(records) {
                 }
             }
             
-            // ⭐⭐⭐ 計算異常記錄（涵蓋所有異常狀態）
+            // 計算異常記錄
             const abnormalReasons = [
-                'STATUS_PUNCH_IN_MISSING',      // 缺上班卡
-                'STATUS_PUNCH_OUT_MISSING',     // 缺下班卡
-                'STATUS_REPAIR_PENDING'         // 補打卡審核中
+                'STATUS_PUNCH_IN_MISSING',
+                'STATUS_PUNCH_OUT_MISSING',
+                'STATUS_REPAIR_PENDING'
             ];
             
-            // ⭐⭐⭐ 計算正常記錄（包含已核准的補打卡）
+            // 計算正常記錄
             const normalReasons = [
-                'STATUS_PUNCH_NORMAL',          // 正常打卡
-                'STATUS_REPAIR_APPROVED'        // 補打卡已核准
+                'STATUS_PUNCH_NORMAL',
+                'STATUS_REPAIR_APPROVED'
             ];
             
             if (abnormalReasons.includes(record.reason)) {
@@ -1001,7 +1010,7 @@ async function updateMonthlyStats(records) {
                 console.log(`   → 正常: ${record.reason}`);
             }
             
-            // ⭐⭐⭐ 計算加班時數
+            // 計算加班時數
             if (record.overtime && record.overtime.hours) {
                 const hours = parseFloat(record.overtime.hours);
                 if (!isNaN(hours)) {
@@ -1011,7 +1020,7 @@ async function updateMonthlyStats(records) {
             }
         });
         
-        // ⭐⭐⭐ 更新 DOM
+        // 更新 DOM
         console.log('');
         console.log('📊 統計結果:');
         console.log(`   出勤天數: ${workDays}`);
