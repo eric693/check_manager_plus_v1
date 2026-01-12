@@ -2137,20 +2137,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     // UI切換邏輯
     const switchTab = (tabId) => {
-        // 修改這一行，加入 'shift-view'
         const tabs = ['dashboard-view', 'monthly-view', 'location-view', 'shift-view', 'admin-view', 'overtime-view', 'leave-view', 'salary-view'];
-        
-        // 修改這一行，加入 'tab-shift-btn'
         const btns = ['tab-dashboard-btn', 'tab-monthly-btn', 'tab-location-btn', 'tab-shift-btn', 'tab-admin-btn', 'tab-overtime-btn', 'tab-leave-btn', 'tab-salary-btn'];
     
-        // 1. 移除舊的 active 類別和 CSS 屬性
+        // 1. 隱藏所有分頁
         tabs.forEach(id => {
             const tabElement = document.getElementById(id);
             tabElement.style.display = 'none';
             tabElement.classList.remove('active');
         });
         
-        // 2. 移除按鈕的選中狀態
+        // 2. 移除所有按鈕的選中狀態
         btns.forEach(id => {
             const btnElement = document.getElementById(id);
             if (btnElement) {
@@ -2160,12 +2157,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
         
-        // 3. 顯示新頁籤並新增 active 類別
+        // 3. 顯示新分頁
         const newTabElement = document.getElementById(tabId);
         newTabElement.style.display = 'block';
         newTabElement.classList.add('active');
         
-        // 4. 設定新頁籤按鈕的選中狀態
+        // 4. 設定新分頁按鈕的選中狀態
         const newBtnElement = document.getElementById(`tab-${tabId.replace('-view', '-btn')}`);
         if (newBtnElement) {
             newBtnElement.classList.replace('bg-gray-200', 'bg-indigo-600');
@@ -2174,13 +2171,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             newBtnElement.classList.add('dark:bg-indigo-500');
         }
         
-        // 5. 根據頁籤 ID 執行特定動作
+        // 5. 根據分頁 ID 執行特定初始化（延遲執行）
         if (tabId === 'monthly-view') {
             renderCalendar(currentMonthDate);
         } else if (tabId === 'location-view') {
             initLocationMap();
-        } else if (tabId === 'shift-view') { // 新增：排班分頁初始化
-            initShiftTab();
+        } else if (tabId === 'shift-view') {
+            setTimeout(() => {
+                if (typeof initShiftTab === 'function') {
+                    initShiftTab();
+                }
+            }, 0);
         } else if (tabId === 'admin-view') {
             fetchAndRenderReviewRequests();
             loadPendingOvertimeRequests();
@@ -2189,13 +2190,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             initAdminAnalysis();
             loadAllUsers();
         } else if (tabId === 'overtime-view') {
-            initOvertimeTab();
-        } else if (tabId === 'leave-view') {
-            initLeaveTab();
-        } else if (tabId === 'salary-view') { // 👈 新增
-            initSalaryTab();
+            setTimeout(() => {
+                if (typeof initOvertimeTab === 'function') {
+                    initOvertimeTab();
+                }
+            }, 0);
+        } else if (tabId === 'leave-view') {  // 👈 修改這裡
+            setTimeout(() => {
+                if (typeof initLeaveTab === 'function') {
+                    initLeaveTab();
+                } else {
+                    console.error('❌ initLeaveTab 未定義');
+                }
+            }, 0);
+        } else if (tabId === 'salary-view') {
+            setTimeout(() => {
+                if (typeof initSalaryTab === 'function') {
+                    initSalaryTab();
+                }
+            }, 0);
         }
-        
     };
     
     // 初始化拉桿
