@@ -939,9 +939,6 @@ async function renderCalendar(date) {
 /**
  * ✅ 更新本月出勤統計（改用後端計算 - 統一數據源）
  */
-/**
- * ✅ 更新本月出勤統計（完整修正版）
- */
 async function updateMonthlyStats(records) {
     try {
         console.log('📊 開始更新統計資料');
