@@ -1135,13 +1135,29 @@ async function confirmBatchUpload() {
             window[callbackName] = function(data) {
                 console.log('📥 批量上傳回應:', data);
                 
+                // ⭐ 新增：顯示詳細結果
+                if (data.data && data.data.results) {
+                    console.log('📊 詳細上傳結果:');
+                    console.log('   成功筆數:', data.data.results.success || 0);
+                    console.log('   失敗筆數:', data.data.results.failed || 0);
+                    
+                    // 顯示失敗的原因
+                    if (data.data.results.errors && data.data.results.errors.length > 0) {
+                        console.log('');
+                        console.log('❌ 失敗原因:');
+                        data.data.results.errors.forEach((error, index) => {
+                            console.log(`   ${index + 1}. ${error}`);
+                        });
+                    }
+                }
+                
                 // 清理
                 delete window[callbackName];
                 if (document.body.contains(script)) {
                     document.body.removeChild(script);
                 }
                 
-                // ⭐ 恢復按鈕
+                // 恢復按鈕
                 isUploading = false;
                 if (confirmBtn) {
                     confirmBtn.disabled = false;
@@ -1150,7 +1166,13 @@ async function confirmBatchUpload() {
                 }
                 
                 if (data.ok) {
-                    showMessage(data.msg || '批量上傳成功', 'success');
+                    // ⭐ 修改：顯示更詳細的成功訊息
+                    let message = data.msg || '批量上傳成功';
+                    if (data.data && data.data.results && data.data.results.failed > 0) {
+                        message += `\n失敗 ${data.data.results.failed} 筆（可能是重複資料）`;
+                    }
+                    showMessage(message, 'success');
+                    
                     cancelBatchUpload();
                     switchTab('view');
                     loadShifts();
