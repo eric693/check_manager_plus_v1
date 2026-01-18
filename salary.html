@@ -1045,39 +1045,48 @@
                             <span data-i18n="SALARY_LEGAL_DEDUCTIONS_TITLE">法定扣款項目</span>
                         </h3>
                         <p class="text-sm text-gray-400 mb-4" data-i18n="LEGAL_DEDUCTIONS_DESC">
-                            可手動輸入扣款金額，或參考台灣勞動法規計算
+                            💡 可手動輸入扣款金額，或點擊「自動計算」按鈕根據投保薪資計算
                         </p>
+                        
+                        <!-- 自動計算按鈕 -->
+                        <div class="mb-4">
+                            <button type="button" onclick="autoFillLegalDeductions()" 
+                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                                🧮 自動計算法定扣款
+                            </button>
+                            <span class="text-xs text-gray-400 ml-2">根據基本薪資自動計算投保級距與扣款</span>
+                        </div>
                         
                         <div class="form-grid">
                             <!-- 勞保費 -->
                             <div class="form-group">
                                 <label class="form-label" data-i18n="SALARY_LABOR_INS_LABEL">勞保費</label>
                                 <input type="number" id="config-labor-fee" class="form-input" 
-                                    value="0" min="0" step="1" placeholder="0">
-                                <span class="form-hint" data-i18n="HINT_LABOR_INS">個人負擔20%</span>
+                                    value="0" min="0" step="1" placeholder="手動輸入或自動計算">
+                                <span class="form-hint" data-i18n="HINT_LABOR_INS">個人負擔20%（可手動修改）</span>
                             </div>
                             
                             <!-- 健保費 -->
                             <div class="form-group">
                                 <label class="form-label" data-i18n="SALARY_HEALTH_INS_LABEL">健保費</label>
                                 <input type="number" id="config-health-fee" class="form-input" 
-                                    value="0" min="0" step="1" placeholder="0">
-                                <span class="form-hint" data-i18n="HINT_HEALTH_INS">個人負擔30%</span>
+                                    value="0" min="0" step="1" placeholder="手動輸入或自動計算">
+                                <span class="form-hint" data-i18n="HINT_HEALTH_INS">個人負擔30%（可手動修改）</span>
                             </div>
                             
                             <!-- 就業保險費 -->
                             <div class="form-group">
                                 <label class="form-label" data-i18n="SALARY_EMPLOYMENT_INS_LABEL">就業保險費</label>
                                 <input type="number" id="config-employment-fee" class="form-input" 
-                                    value="0" min="0" step="1" placeholder="0">
-                                <span class="form-hint" data-i18n="HINT_EMPLOYMENT_INS">費率1%</span>
+                                    value="0" min="0" step="1" placeholder="手動輸入或自動計算">
+                                <span class="form-hint" data-i18n="HINT_EMPLOYMENT_INS">費率1%（可手動修改）</span>
                             </div>
                             
                             <!-- 勞退自提率（可輸入） -->
                             <div class="form-group">
                                 <label class="form-label" data-i18n="SALARY_PENSION_RATE_LABEL">勞退自提率 (%)</label>
                                 <input type="number" id="config-pension-rate" class="form-input" 
-                                    value="0" min="0" max="6" step="1" placeholder="0">
+                                    value="0" min="0" max="6" step="1" placeholder="0~6">
                                 <span class="form-hint" data-i18n="HINT_PENSION_RATE">可選擇 0% ~ 6%</span>
                             </div>
                             
@@ -1085,15 +1094,15 @@
                             <div class="form-group">
                                 <label class="form-label" data-i18n="SALARY_PENSION_SELF_LABEL">勞退自提金額</label>
                                 <input type="number" id="config-pension-self" class="form-input" 
-                                    value="0" min="0" step="1" placeholder="0">
-                                <span class="form-hint">可手動輸入金額</span>
+                                    value="0" min="0" step="1" placeholder="手動輸入或自動計算">
+                                <span class="form-hint">可手動輸入金額（或根據自提率自動計算）</span>
                             </div>
                             
                             <!-- 所得稅 -->
                             <div class="form-group">
                                 <label class="form-label" data-i18n="SALARY_TAX_LABEL">所得稅</label>
                                 <input type="number" id="config-income-tax" class="form-input" 
-                                    value="0" min="0" step="1" placeholder="0">
+                                    value="0" min="0" step="1" placeholder="手動輸入或自動計算">
                                 <span class="form-hint">可手動輸入預扣稅額</span>
                             </div>
                         </div>
