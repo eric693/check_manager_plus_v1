@@ -1080,137 +1080,74 @@ let isUploading = false; // ⭐ 新增：上傳狀態標記
 async function confirmBatchUpload() {
     if (batchData.length === 0) return;
     
-    // ⭐⭐⭐ 防止重複點擊
     if (isUploading) {
-        console.warn('⚠️ 正在上傳中，請勿重複點擊');
         showMessage('正在上傳中，請稍候...', 'warning');
         return;
     }
     
-    isUploading = true; // ⭐ 設定為上傳中
+    isUploading = true;
     
-    // ⭐ 禁用「確認上傳」按鈕
     const confirmBtn = document.querySelector('#batch-preview .btn-primary');
     const originalText = confirmBtn ? confirmBtn.textContent : '';
     
     if (confirmBtn) {
         confirmBtn.disabled = true;
-        confirmBtn.textContent = '上傳中...';
         confirmBtn.style.opacity = '0.6';
     }
     
     try {
-        const token = localStorage.getItem('sessionToken');
+        // ⭐ 每次上傳 10 筆，避免 URL 過長
+        const BATCH_SIZE = 10;
+        const batches = [];
         
-        console.log('📤 準備上傳批量資料:', batchData.length, '筆');
-        
-        // ⭐⭐⭐ 關鍵：檢查資料中是否有重複
-        const seen = new Set();
-        const uniqueData = [];
-        
-        batchData.forEach((shift, index) => {
-            const key = `${shift.employeeId}_${shift.date}`;
-            if (seen.has(key)) {
-                console.warn(`⚠️ 第 ${index + 1} 筆重複: ${shift.employeeName} - ${shift.date}`);
-            } else {
-                seen.add(key);
-                uniqueData.push(shift);
-            }
-        });
-        
-        if (uniqueData.length < batchData.length) {
-            const duplicateCount = batchData.length - uniqueData.length;
-            console.warn(`⚠️ 已移除 ${duplicateCount} 筆重複資料`);
-            showMessage(`已移除 ${duplicateCount} 筆重複資料`, 'warning');
+        for (let i = 0; i < batchData.length; i += BATCH_SIZE) {
+            batches.push(batchData.slice(i, i + BATCH_SIZE));
         }
         
-        console.log('📊 實際上傳筆數: ' + uniqueData.length);
+        console.log(`📦 分成 ${batches.length} 批上傳，每批 ${BATCH_SIZE} 筆`);
         
-        const shiftsJson = encodeURIComponent(JSON.stringify(uniqueData));
-        const url = `${apiUrl}?action=batchAddShifts&token=${token}&shiftsArray=${shiftsJson}`;
+        let totalSuccess = 0;
+        let totalFailed = 0;
         
-        const callbackName = 'batchUploadCallback_' + Date.now();
-        
-        return new Promise((resolve, reject) => {
-            window[callbackName] = function(data) {
-                console.log('📥 批量上傳回應:', data);
-                
-                // ⭐ 新增：顯示詳細結果
-                if (data.data && data.data.results) {
-                    console.log('📊 詳細上傳結果:');
-                    console.log('   成功筆數:', data.data.results.success || 0);
-                    console.log('   失敗筆數:', data.data.results.failed || 0);
-                    
-                    // 顯示失敗的原因
-                    if (data.data.results.errors && data.data.results.errors.length > 0) {
-                        console.log('');
-                        console.log('❌ 失敗原因:');
-                        data.data.results.errors.forEach((error, index) => {
-                            console.log(`   ${index + 1}. ${error}`);
-                        });
-                    }
-                }
-                
-                // 清理
-                delete window[callbackName];
-                if (document.body.contains(script)) {
-                    document.body.removeChild(script);
-                }
-                
-                // 恢復按鈕
-                isUploading = false;
-                if (confirmBtn) {
-                    confirmBtn.disabled = false;
-                    confirmBtn.textContent = originalText;
-                    confirmBtn.style.opacity = '1';
-                }
-                
-                if (data.ok) {
-                    // ⭐ 修改：顯示更詳細的成功訊息
-                    let message = data.msg || '批量上傳成功';
-                    if (data.data && data.data.results && data.data.results.failed > 0) {
-                        message += `\n失敗 ${data.data.results.failed} 筆（可能是重複資料）`;
-                    }
-                    showMessage(message, 'success');
-                    
-                    cancelBatchUpload();
-                    switchTab('view');
-                    loadShifts();
-                    resolve(data);
-                } else {
-                    showMessage(data.msg || '批量上傳失敗', 'error');
-                    reject(new Error(data.msg));
-                }
-            };
+        // 逐批上傳
+        for (let i = 0; i < batches.length; i++) {
+            const batch = batches[i];
             
-            const script = document.createElement('script');
-            script.src = url + `&callback=${callbackName}`;
-            script.onerror = function() {
-                console.error('❌ 批量上傳失敗: 無法載入腳本');
-                delete window[callbackName];
-                if (document.body.contains(script)) {
-                    document.body.removeChild(script);
-                }
-                
-                // ⭐ 恢復按鈕
-                isUploading = false;
-                if (confirmBtn) {
-                    confirmBtn.disabled = false;
-                    confirmBtn.textContent = originalText;
-                    confirmBtn.style.opacity = '1';
-                }
-                
-                showMessage('網路錯誤，請重試', 'error');
-                reject(new Error('Network error'));
-            };
+            if (confirmBtn) {
+                confirmBtn.textContent = `上傳中 ${i + 1}/${batches.length}...`;
+            }
             
-            document.body.appendChild(script);
-        });
+            console.log(`📤 上傳第 ${i + 1} 批（${batch.length} 筆）`);
+            
+            const result = await uploadBatch(batch);
+            
+            if (result.ok && result.data && result.data.results) {
+                totalSuccess += result.data.results.success || 0;
+                totalFailed += result.data.results.failed || 0;
+            }
+            
+            // 延遲 500ms 避免請求過快
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        // 恢復按鈕
+        isUploading = false;
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = originalText;
+            confirmBtn.style.opacity = '1';
+        }
+        
+        // 顯示結果
+        showMessage(`✅ 批量上傳完成！成功 ${totalSuccess} 筆，失敗 ${totalFailed} 筆`, 'success');
+        
+        cancelBatchUpload();
+        switchTab('view');
+        loadShifts();
         
     } catch (error) {
         console.error('❌ 批量上傳失敗:', error);
         
-        // ⭐ 恢復按鈕
         isUploading = false;
         if (confirmBtn) {
             confirmBtn.disabled = false;
@@ -1220,6 +1157,52 @@ async function confirmBatchUpload() {
         
         showMessage('批量上傳失敗: ' + error.message, 'error');
     }
+}
+
+// ⭐ 新增：上傳單一批次的函式
+function uploadBatch(shifts) {
+    return new Promise((resolve, reject) => {
+        const token = localStorage.getItem('sessionToken');
+        const shiftsJson = encodeURIComponent(JSON.stringify(shifts));
+        const url = `${apiUrl}?action=batchAddShifts&token=${token}&shiftsArray=${shiftsJson}`;
+        
+        console.log('📡 URL 長度:', url.length);
+        
+        const callbackName = 'batchCallback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        
+        // 設定 10 秒逾時
+        const timeout = setTimeout(() => {
+            cleanup();
+            reject(new Error('請求逾時'));
+        }, 10000);
+        
+        function cleanup() {
+            clearTimeout(timeout);
+            delete window[callbackName];
+            if (script && script.parentNode) {
+                script.parentNode.removeChild(script);
+            }
+        }
+        
+        window[callbackName] = function(data) {
+            cleanup();
+            
+            if (data.ok) {
+                resolve(data);
+            } else {
+                reject(new Error(data.msg || '上傳失敗'));
+            }
+        };
+        
+        const script = document.createElement('script');
+        script.src = url + `&callback=${callbackName}`;
+        script.onerror = function() {
+            cleanup();
+            reject(new Error('網路錯誤'));
+        };
+        
+        document.body.appendChild(script);
+    });
 }
 
 function displayBatchPreview(data) {
