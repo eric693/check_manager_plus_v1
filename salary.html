@@ -1052,9 +1052,9 @@
                         <div class="mb-4">
                             <button type="button" onclick="autoFillLegalDeductions()" 
                                     class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-                                🧮 自動計算法定扣款
+                                🧮 查看建議扣款金額
                             </button>
-                            <span class="text-xs text-gray-400 ml-2">根據基本薪資自動計算投保級距與扣款</span>
+                            <span class="text-xs text-gray-400 ml-2">根據基本薪資計算投保級距與建議扣款，請手動填入</span>
                         </div>
                         
                         <div class="form-grid">
@@ -1626,7 +1626,7 @@
         }
 
         /**
-         * ✅ 自動填入法定扣款按鈕功能
+         * ✅ 自動填入法定扣款按鈕功能（修改版 - 不自動填入）
          */
         function autoFillLegalDeductions() {
             const baseSalary = parseFloat(document.getElementById('config-base-salary').value) || 0;
@@ -1651,17 +1651,24 @@
                 incomeTax = Math.round((baseSalary - 34000) * 0.05);
             }
             
-            // 填入欄位
-            document.getElementById('config-labor-fee').value = laborFee;
-            document.getElementById('config-health-fee').value = healthFee;
-            document.getElementById('config-employment-fee').value = employmentFee;
-            document.getElementById('config-pension-self').value = pensionSelf;
-            document.getElementById('config-income-tax').value = incomeTax;
+            // ❌ 移除這些填入欄位的程式碼
+            // document.getElementById('config-labor-fee').value = laborFee;
+            // document.getElementById('config-health-fee').value = healthFee;
+            // document.getElementById('config-employment-fee').value = employmentFee;
+            // document.getElementById('config-pension-self').value = pensionSelf;
+            // document.getElementById('config-income-tax').value = incomeTax;
             
-            // 觸發試算更新
-            autoCalculateDeductions();
-            
-            showNotification(`✅ 已自動計算法定扣款（投保級距: $${insuredSalary.toLocaleString()})`, 'success');
+            // ✅ 改為只顯示提示訊息
+            showNotification(
+                `💡 建議扣款金額（投保級距: $${insuredSalary.toLocaleString()}）\n` +
+                `勞保費: $${laborFee}\n` +
+                `健保費: $${healthFee}\n` +
+                `就業保險費: $${employmentFee}\n` +
+                `勞退自提: $${pensionSelf}\n` +
+                `所得稅: $${incomeTax}\n\n` +
+                `請手動輸入到欄位中`,
+                'info'
+            );
         }
         function bindAutoCalculation() {
             const inputs = [
