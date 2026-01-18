@@ -1625,6 +1625,44 @@
             window.history.back();
         }
 
+        /**
+         * ✅ 自動填入法定扣款按鈕功能
+         */
+        function autoFillLegalDeductions() {
+            const baseSalary = parseFloat(document.getElementById('config-base-salary').value) || 0;
+            const pensionRate = parseFloat(document.getElementById('config-pension-rate').value) || 0;
+            
+            if (baseSalary <= 0) {
+                showNotification('⚠️ 請先輸入基本薪資', 'error');
+                return;
+            }
+            
+            // 取得投保級距
+            const insuredSalary = getInsuredSalary(baseSalary);
+            
+            // 計算法定扣款
+            const laborFee = Math.round(insuredSalary * 0.115 * 0.2);
+            const healthFee = Math.round(insuredSalary * 0.0517 * 0.3);
+            const employmentFee = Math.round(insuredSalary * 0.01 * 0.2);
+            const pensionSelf = Math.round(insuredSalary * (pensionRate / 100));
+            
+            let incomeTax = 0;
+            if (baseSalary > 34000) {
+                incomeTax = Math.round((baseSalary - 34000) * 0.05);
+            }
+            
+            // 填入欄位
+            document.getElementById('config-labor-fee').value = laborFee;
+            document.getElementById('config-health-fee').value = healthFee;
+            document.getElementById('config-employment-fee').value = employmentFee;
+            document.getElementById('config-pension-self').value = pensionSelf;
+            document.getElementById('config-income-tax').value = incomeTax;
+            
+            // 觸發試算更新
+            autoCalculateDeductions();
+            
+            showNotification(`✅ 已自動計算法定扣款（投保級距: $${insuredSalary.toLocaleString()})`, 'success');
+        }
         function bindAutoCalculation() {
             const inputs = [
                 'config-base-salary',
