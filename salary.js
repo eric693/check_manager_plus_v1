@@ -652,58 +652,86 @@ function displayEmployeeSalary(data) {
     let restdayPay = 0;
     let holidayPay = 0;
 
+    // ⭐⭐⭐ 修正：統一讀取欄位（適用所有情況）
+    weekdayPay = parseFloat(
+        data['平日加班費/延長工時(前2h)'] ||
+        data['平日加班費'] || 
+        data.weekdayOvertimePay || 
+        data.extendedOvertimeFirst2h || 
+        0
+    );
+
+    restdayPay = parseFloat(
+        data['休息日加班費/延長工時(後2h)'] ||
+        data['休息日加班費'] || 
+        data.restdayOvertimePay || 
+        data.extendedOvertimeAfter2h || 
+        0
+    );
+
+    holidayPay = parseFloat(
+        data['國定假日加班費'] || 
+        data.holidayOvertimePay || 
+        0
+    );
+
+    console.log('💼 加班費明細:');
+    console.log('   平日/延長工時(前2h): $' + weekdayPay);
+    console.log('   休息日/延長工時(後2h): $' + restdayPay);
+    console.log('   國定假日: $' + holidayPay);
+
     // ⭐ 情況三：管理部行政（月薪制-標準工時）
-    if (employeeType === '管理部行政' && employeeSalaryType === '月薪' && workTimeType === '標準工時') {
-        // 延長工時（前2h + 後2h）當作平日加班費顯示
-        const extFirst2h = parseFloat(data.extendedOvertimeFirst2h || data['延長工時加班費(前2h)']) || 0;
-        const extAfter2h = parseFloat(data.extendedOvertimeAfter2h || data['延長工時加班費(後2h)']) || 0;
+    // if (employeeType === '管理部行政' && employeeSalaryType === '月薪' && workTimeType === '標準工時') {
+    //     // 延長工時（前2h + 後2h）當作平日加班費顯示
+    //     const extFirst2h = parseFloat(data.extendedOvertimeFirst2h || data['延長工時加班費(前2h)']) || 0;
+    //     const extAfter2h = parseFloat(data.extendedOvertimeAfter2h || data['延長工時加班費(後2h)']) || 0;
         
-        weekdayPay = extFirst2h + extAfter2h;  // 合併顯示
+    //     weekdayPay = extFirst2h + extAfter2h;  // 合併顯示
         
-        restdayPay = parseFloat(
-            data.restdayOvertimePay !== undefined 
-                ? data.restdayOvertimePay 
-                : (data['休息日加班費'] || 0)
-        );
+    //     restdayPay = parseFloat(
+    //         data.restdayOvertimePay !== undefined 
+    //             ? data.restdayOvertimePay 
+    //             : (data['休息日加班費'] || 0)
+    //     );
         
-        holidayPay = parseFloat(
-            data.holidayOvertimePay !== undefined 
-                ? data.holidayOvertimePay 
-                : (data['國定假日加班費'] || 0)
-        );
+    //     holidayPay = parseFloat(
+    //         data.holidayOvertimePay !== undefined 
+    //             ? data.holidayOvertimePay 
+    //             : (data['國定假日加班費'] || 0)
+    //     );
         
-        console.log('💼 情況三加班費:');
-        console.log('   延長工時（前2h）:', extFirst2h);
-        console.log('   延長工時（後2h）:', extAfter2h);
-        console.log('   平日加班費（合計）:', weekdayPay);
-        console.log('   休息日加班費:', restdayPay);
-        console.log('   國定假日加班費:', holidayPay);
+    //     console.log('💼 情況三加班費:');
+    //     console.log('   延長工時（前2h）:', extFirst2h);
+    //     console.log('   延長工時（後2h）:', extAfter2h);
+    //     console.log('   平日加班費（合計）:', weekdayPay);
+    //     console.log('   休息日加班費:', restdayPay);
+    //     console.log('   國定假日加班費:', holidayPay);
         
-    } else {
-        // ⭐ 情況一、二：使用原本的欄位
-        weekdayPay = parseFloat(
-            data.weekdayOvertimePay !== undefined 
-                ? data.weekdayOvertimePay 
-                : (data['平日加班費'] || 0)
-        );
+    // } else {
+    //     // ⭐ 情況一、二：使用原本的欄位
+    //     weekdayPay = parseFloat(
+    //         data.weekdayOvertimePay !== undefined 
+    //             ? data.weekdayOvertimePay 
+    //             : (data['平日加班費'] || 0)
+    //     );
         
-        restdayPay = parseFloat(
-            data.restdayOvertimePay !== undefined 
-                ? data.restdayOvertimePay 
-                : (data['休息日加班費'] || 0)
-        );
+    //     restdayPay = parseFloat(
+    //         data.restdayOvertimePay !== undefined 
+    //             ? data.restdayOvertimePay 
+    //             : (data['休息日加班費'] || 0)
+    //     );
         
-        holidayPay = parseFloat(
-            data.holidayOvertimePay !== undefined 
-                ? data.holidayOvertimePay 
-                : (data['國定假日加班費'] || 0)
-        );
+    //     holidayPay = parseFloat(
+    //         data.holidayOvertimePay !== undefined 
+    //             ? data.holidayOvertimePay 
+    //             : (data['國定假日加班費'] || 0)
+    //     );
         
-        console.log('🏭 情況一/二加班費:');
-        console.log('   平日加班費:', weekdayPay);
-        console.log('   休息日加班費:', restdayPay);
-        console.log('   國定假日加班費:', holidayPay);
-    }
+    //     console.log('🏭 情況一/二加班費:');
+    //     console.log('   平日加班費:', weekdayPay);
+    //     console.log('   休息日加班費:', restdayPay);
+    //     console.log('   國定假日加班費:', holidayPay);
+    // }
 
     // ⭐⭐⭐ 新增：未休假補薪顯示
     const unusedLeavePay = parseFloat(data['未休假補薪'] || data.unusedLeavePay) || 0;
