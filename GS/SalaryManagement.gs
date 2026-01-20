@@ -476,20 +476,16 @@ function syncSalaryToMonthlyRecord(employeeId, yearMonth) {
 
 // ==================== 薪資計算功能 ====================
 /**
- * ✅ 取得員工該月份的加班記錄（正確版）
- * 
- * @param {string} employeeId - 員工ID
- * @param {string} yearMonth - 年月 (YYYY-MM)
- * @returns {Array} 加班記錄陣列
+ * ✅ 取得員工該月份的加班記錄（完整修正版）
  */
 function getEmployeeMonthlyOvertime(employeeId, yearMonth) {
   try {
-    Logger.log('📋 開始取得員工加班記錄');
+    Logger.log('📋 取得加班記錄');
     Logger.log('   員工ID: ' + employeeId);
     Logger.log('   年月: ' + yearMonth);
     
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(SHEET_OVERTIME); // "加班申請"
+    const sheet = ss.getSheetByName('加班申請');
     
     if (!sheet) {
       Logger.log('⚠️ 找不到「加班申請」工作表');
@@ -506,17 +502,11 @@ function getEmployeeMonthlyOvertime(employeeId, yearMonth) {
     const headers = data[0];
     Logger.log('📊 加班申請欄位: ' + headers.join(', '));
     
-    // ⭐ 根據實際欄位結構定義索引
-    const userIdIndex = 1;      // 員工ID
-    const dateIndex = 3;        // 加班日期
-    const hoursIndex = 6;       // 加班時數
-    const statusIndex = 9;      // 審核狀態
-    
-    Logger.log('🔍 使用欄位索引:');
-    Logger.log('   員工ID: ' + userIdIndex);
-    Logger.log('   加班日期: ' + dateIndex);
-    Logger.log('   加班時數: ' + hoursIndex);
-    Logger.log('   審核狀態: ' + statusIndex);
+    // ⭐⭐⭐ 欄位索引（根據實際 Sheet）
+    const userIdIndex = 1;      // 員工ID (B欄)
+    const dateIndex = 3;        // 加班日期 (D欄)
+    const hoursIndex = 6;       // 加班時數 (G欄)
+    const statusIndex = 9;      // 審核狀態 (J欄)
     
     const records = [];
     
@@ -524,36 +514,46 @@ function getEmployeeMonthlyOvertime(employeeId, yearMonth) {
       const row = data[i];
       
       const rowUserId = String(row[userIdIndex] || '').trim();
-      const date = row[dateIndex];
+      const overtimeDate = row[dateIndex];
       const hours = row[hoursIndex];
       const status = String(row[statusIndex] || '').trim().toLowerCase();
       
-      // 檢查員工ID
-      if (rowUserId !== employeeId) continue;
+      // ⭐⭐⭐ 關鍵修正：先檢查員工ID
+      if (rowUserId !== employeeId) {
+        continue;
+      }
       
-      // ⭐ 只計算已核准的加班
+      // ⭐⭐⭐ 關鍵修正：只計算已核准的
       if (status !== 'approved') {
-        Logger.log(`   ⏭️ 跳過未核准的加班: ${date} (狀態: ${status})`);
+        Logger.log(`   ⏭️ 跳過未核准: ${overtimeDate} (狀態: ${status})`);
         continue;
       }
       
-      // 解析日期
+      // ⭐⭐⭐ 關鍵修正：處理 Date 物件
       let dateStr = '';
-      if (date instanceof Date) {
-        dateStr = Utilities.formatDate(date, 'Asia/Taipei', 'yyyy-MM-dd');
-      } else if (typeof date === 'string') {
-        dateStr = date;
+      
+      if (overtimeDate instanceof Date) {
+        // 如果是 Date 物件，轉換為 YYYY-MM-DD
+        dateStr = Utilities.formatDate(overtimeDate, 'Asia/Taipei', 'yyyy-MM-dd');
+      } else if (typeof overtimeDate === 'string') {
+        // 如果已經是字串，直接使用
+        dateStr = overtimeDate;
       } else {
-        Logger.log(`   ⏭️ 跳過無效日期: ${date}`);
+        // 其他情況，跳過
+        Logger.log(`   ⚠️ 無法解析日期: ${overtimeDate}`);
         continue;
       }
       
-      // 檢查年月
-      const dateYearMonth = dateStr.substring(0, 7);
-      if (dateYearMonth !== yearMonth) {
+      // ⭐⭐⭐ 關鍵修正：提取年月 (YYYY-MM)
+      const recordYearMonth = dateStr.substring(0, 7);
+      
+      // 比對年月
+      if (recordYearMonth !== yearMonth) {
+        Logger.log(`   ⏭️ 跳過不符月份: ${dateStr} (${recordYearMonth} ≠ ${yearMonth})`);
         continue;
       }
       
+      // ⭐⭐⭐ 加入記錄
       const hoursNum = parseFloat(hours) || 0;
       
       records.push({
@@ -564,7 +564,7 @@ function getEmployeeMonthlyOvertime(employeeId, yearMonth) {
       Logger.log(`   ✅ ${dateStr}: ${hoursNum}h (狀態: ${status})`);
     }
     
-    Logger.log(`✅ 找到 ${records.length} 筆已核准的加班記錄`);
+    Logger.log(`✅ 找到 ${records.length} 筆加班記錄`);
     
     return records;
     
@@ -574,10 +574,21 @@ function getEmployeeMonthlyOvertime(employeeId, yearMonth) {
     return [];
   }
 }
+// ==================================================================================
+// saveMonthlySalary - 完整修正版（支援情況一、二、三）
+// ==================================================================================
+
+/**
+ * ✅ 儲存月薪資記錄（完整版 - 支援三種情況）
+ * 
+ * @param {Object} salaryData - 薪資資料物件
+ * @returns {Object} 儲存結果
+ */
 function saveMonthlySalary(salaryData) {
   try {
     const sheet = getMonthlySalarySheetEnhanced();
     
+    // 正規化年月格式
     let normalizedYearMonth = salaryData.yearMonth;
     
     if (salaryData.yearMonth instanceof Date) {
@@ -590,6 +601,21 @@ function saveMonthlySalary(salaryData) {
     const salaryType = salaryData.salaryType || '月薪';
     const workTimeType = salaryData.workTimeType || '標準工時';
     
+    // ⭐⭐⭐ 關鍵修正：銀行代碼處理
+    let bankCode = salaryData.bankCode || '';
+    
+    // 1. 移除所有非數字字符
+    bankCode = String(bankCode).replace(/[^0-9]/g, '');
+    
+    // 2. 補零到 3 位數
+    if (bankCode.length > 0) {
+      bankCode = bankCode.padStart(3, '0');
+    }
+    
+    // 3. 強制加上單引號前綴（防止被轉成日期或數字）
+    bankCode = "'" + bankCode;  // '007
+    
+    // ⭐⭐⭐ 完整的 row 陣列（支援所有情況）
     const row = [
       // A-I: 基本資訊 (9欄)
       salaryId,
@@ -612,13 +638,18 @@ function saveMonthlySalary(salaryData) {
       salaryData.otherAllowance1 || 0,
       salaryData.otherAllowance2 || 0,
       salaryData.otherAllowance3 || 0,
-      salaryData.weekdayOvertimePay || 0,
-      salaryData.restdayOvertimePay || 0,
-      salaryData.holidayOvertimePay || 0,
+      
+      // ⭐⭐⭐ 加班費（根據情況使用不同欄位）
+      // 情況一、二：平日/休息日/國定假日
+      // 情況三：延長工時（前2h）/延長工時（後2h）/休息日/國定假日
+      salaryData.weekdayOvertimePay || salaryData.extendedOvertimeFirst2h || 0,  // S欄
+      salaryData.restdayOvertimePay || salaryData.extendedOvertimeAfter2h || 0,   // T欄（情況三改用途）
+      salaryData.holidayOvertimePay || 0,                                          // U欄
+      
       salaryData.unusedLeavePay || 0,
       salaryData.unusedLeaveDays || 0,
-      salaryData.monthlyRestPay || 0,
-      salaryData.monthlyRestMissedDays || 0,
+      salaryData.monthlyRestPay || 0,        // ⭐ 情況一專用
+      salaryData.monthlyRestMissedDays || 0, // ⭐ 情況一專用
       
       // Z-AE: 法定扣款 (6欄)
       salaryData.laborFee || 0,
@@ -628,25 +659,25 @@ function saveMonthlySalary(salaryData) {
       salaryData.pensionSelf || 0,
       salaryData.incomeTax || 0,
       
-      // AF-AO: 其他扣款 (10欄) ⭐⭐⭐ 新增 4 欄
-      salaryData.leaveDeduction || 0,           // AF: 請假扣款總計
-      salaryData.sickLeaveHours || 0,           // AG ⭐
-      salaryData.sickLeaveDeduction || 0,       // AH ⭐
-      salaryData.personalLeaveHours || 0,       // AI ⭐
-      salaryData.personalLeaveDeduction || 0,   // AJ ⭐
-      salaryData.welfareFee || 0,               // AK
-      salaryData.dormitoryFee || 0,             // AL
-      salaryData.groupInsurance || 0,           // AM
-      salaryData.otherDeduction1 || 0,          // AN
-      salaryData.otherDeduction2 || 0,          // AO
+      // AF-AO: 其他扣款 (10欄)
+      salaryData.leaveDeduction || 0,
+      salaryData.sickLeaveHours || 0,
+      salaryData.sickLeaveDeduction || 0,
+      salaryData.personalLeaveHours || 0,
+      salaryData.personalLeaveDeduction || 0,
+      salaryData.welfareFee || 0,
+      salaryData.dormitoryFee || 0,
+      salaryData.groupInsurance || 0,
+      salaryData.otherDeduction1 || 0,
+      salaryData.otherDeduction2 || 0,
       
       // AP-AQ: 總計 (2欄)
       salaryData.grossSalary || 0,
       salaryData.netSalary || 0,
       
       // AR-AS: 銀行資訊 (2欄)
-      salaryData.bankCode || "",
-      salaryData.bankAccount || "",
+      bankCode,                    // AR: 銀行代碼（強制文字格式）
+      salaryData.bankAccount || "",  // AS: 銀行帳號
       
       // AT-AV: 系統欄位 (3欄)
       salaryData.status || "已計算",
@@ -655,7 +686,10 @@ function saveMonthlySalary(salaryData) {
     ];
     
     Logger.log('📝 準備寫入的 row 長度: ' + row.length);
-    Logger.log('   前5個欄位: ' + row.slice(0, 5).join(', '));
+    Logger.log('   薪資單ID: ' + salaryId);
+    Logger.log('   員工: ' + salaryData.employeeName);
+    Logger.log('   薪資類型: ' + salaryType);
+    Logger.log('   工時類型: ' + workTimeType);
     
     const data = sheet.getDataRange().getValues();
     let found = false;
@@ -670,19 +704,145 @@ function saveMonthlySalary(salaryData) {
     }
     
     if (!found) {
-      // ⭐⭐⭐ 關鍵修正：改用 setValues 寫入
       const lastRow = sheet.getLastRow();
       sheet.getRange(lastRow + 1, 1, 1, row.length).setValues([row]);
-      Logger.log(`✅ 新增薪資單: ${salaryId}（使用 setValues）`);
+      Logger.log(`✅ 新增薪資單: ${salaryId}`);
     }
     
     return { success: true, salaryId: salaryId, message: "薪資單儲存成功" };
     
   } catch (error) {
     Logger.log("❌ 儲存薪資單失敗: " + error);
+    Logger.log("❌ 錯誤堆疊: " + error.stack);
     return { success: false, message: error.toString() };
   }
 }
+
+/**
+ * ⚠️ 重要提醒：欄位對應關係
+ * 
+ * S欄（平日加班費 / 延長工時前2h）：
+ * - 情況一、二：平日加班費
+ * - 情況三：延長工時加班費（前2h）
+ * 
+ * T欄（休息日加班費 / 延長工時後2h）：
+ * - 情況一、二：休息日加班費
+ * - 情況三：延長工時加班費（後2h）+ 休息日加班費（需合併）
+ * 
+ * U欄（國定假日加班費）：
+ * - 所有情況通用
+ */
+
+console.log('✅ saveMonthlySalary 已更新（支援情況一、二、三）');
+// function saveMonthlySalary(salaryData) {
+//   try {
+//     const sheet = getMonthlySalarySheetEnhanced();
+    
+//     let normalizedYearMonth = salaryData.yearMonth;
+    
+//     if (salaryData.yearMonth instanceof Date) {
+//       normalizedYearMonth = Utilities.formatDate(salaryData.yearMonth, "Asia/Taipei", "yyyy-MM");
+//     } else if (typeof salaryData.yearMonth === 'string') {
+//       normalizedYearMonth = salaryData.yearMonth.substring(0, 7);
+//     }
+    
+//     const salaryId = `SAL-${normalizedYearMonth}-${salaryData.employeeId}`;
+//     const salaryType = salaryData.salaryType || '月薪';
+//     const workTimeType = salaryData.workTimeType || '標準工時';
+    
+//     const row = [
+//       // A-I: 基本資訊 (9欄)
+//       salaryId,
+//       salaryData.employeeId,
+//       salaryData.employeeName,
+//       normalizedYearMonth,
+//       salaryType,
+//       workTimeType,
+//       salaryData.hourlyRate || 0,
+//       salaryData.totalWorkHours || 0,
+//       salaryData.totalOvertimeHours || 0,
+      
+//       // J-Y: 應發項目 (16欄)
+//       salaryData.baseSalary || 0,
+//       salaryData.positionAllowance || 0,
+//       salaryData.mealAllowance || 0,
+//       salaryData.transportAllowance || 0,
+//       salaryData.attendanceBonus || 0,
+//       salaryData.performanceBonus || 0,
+//       salaryData.otherAllowance1 || 0,
+//       salaryData.otherAllowance2 || 0,
+//       salaryData.otherAllowance3 || 0,
+//       salaryData.weekdayOvertimePay || 0,
+//       salaryData.restdayOvertimePay || 0,
+//       salaryData.holidayOvertimePay || 0,
+//       salaryData.unusedLeavePay || 0,
+//       salaryData.unusedLeaveDays || 0,
+//       salaryData.monthlyRestPay || 0,
+//       salaryData.monthlyRestMissedDays || 0,
+      
+//       // Z-AE: 法定扣款 (6欄)
+//       salaryData.laborFee || 0,
+//       salaryData.healthFee || 0,
+//       salaryData.employmentFee || 0,
+//       salaryData.pensionSelfRate || 0,
+//       salaryData.pensionSelf || 0,
+//       salaryData.incomeTax || 0,
+      
+//       // AF-AO: 其他扣款 (10欄) ⭐⭐⭐ 新增 4 欄
+//       salaryData.leaveDeduction || 0,           // AF: 請假扣款總計
+//       salaryData.sickLeaveHours || 0,           // AG ⭐
+//       salaryData.sickLeaveDeduction || 0,       // AH ⭐
+//       salaryData.personalLeaveHours || 0,       // AI ⭐
+//       salaryData.personalLeaveDeduction || 0,   // AJ ⭐
+//       salaryData.welfareFee || 0,               // AK
+//       salaryData.dormitoryFee || 0,             // AL
+//       salaryData.groupInsurance || 0,           // AM
+//       salaryData.otherDeduction1 || 0,          // AN
+//       salaryData.otherDeduction2 || 0,          // AO
+      
+//       // AP-AQ: 總計 (2欄)
+//       salaryData.grossSalary || 0,
+//       salaryData.netSalary || 0,
+      
+//       // AR-AS: 銀行資訊 (2欄)
+//       salaryData.bankCode || "",
+//       salaryData.bankAccount || "",
+      
+//       // AT-AV: 系統欄位 (3欄)
+//       salaryData.status || "已計算",
+//       salaryData.note || "",
+//       new Date()
+//     ];
+    
+//     Logger.log('📝 準備寫入的 row 長度: ' + row.length);
+//     Logger.log('   前5個欄位: ' + row.slice(0, 5).join(', '));
+    
+//     const data = sheet.getDataRange().getValues();
+//     let found = false;
+    
+//     for (let i = 1; i < data.length; i++) {
+//       if (data[i][0] === salaryId) {
+//         sheet.getRange(i + 1, 1, 1, row.length).setValues([row]);
+//         found = true;
+//         Logger.log(`✅ 更新薪資單: ${salaryId}`);
+//         break;
+//       }
+//     }
+    
+//     if (!found) {
+//       // ⭐⭐⭐ 關鍵修正：改用 setValues 寫入
+//       const lastRow = sheet.getLastRow();
+//       sheet.getRange(lastRow + 1, 1, 1, row.length).setValues([row]);
+//       Logger.log(`✅ 新增薪資單: ${salaryId}（使用 setValues）`);
+//     }
+    
+//     return { success: true, salaryId: salaryId, message: "薪資單儲存成功" };
+    
+//   } catch (error) {
+//     Logger.log("❌ 儲存薪資單失敗: " + error);
+//     return { success: false, message: error.toString() };
+//   }
+// }
 /**
  * ✅ 查詢我的薪資（完整版）
  */
@@ -1241,187 +1401,370 @@ function calculateHourlySalary(employeeId, yearMonth) {
 }
 
 /**
+ * ✅ 最終修正版：取得員工月份打卡記錄
+ * 
+ * 根據實際 Sheet 結構（從截圖確認）：
+ * 欄 A (索引0): 打卡時間 (Date 物件，例如：2026/1/2 上午 9:00:00)
+ * 欄 B (索引1): userId
+ * 欄 C (索引2): 部門
+ * 欄 D (索引3): 打卡人員
+ * 欄 E (索引4): 打卡類別 (上班/下班)
+ * 欄 F (索引5): GPS位置
+ * 欄 G (索引6): 地點
+ * 欄 H (索引7): 備註
+ * 欄 I (索引8): 管理員審核
+ * 欄 J (索引9): 使用裝置詳細訊息
+ */
+function getEmployeeMonthlyAttendanceInternal(employeeId, yearMonth) {
+  try {
+    Logger.log('📋 取得員工月份打卡記錄（最終修正版）');
+    Logger.log(`   員工ID: ${employeeId}`);
+    Logger.log(`   年月: ${yearMonth}`);
+    
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('打卡紀錄');
+    
+    if (!sheet) {
+      Logger.log('❌ 找不到「打卡紀錄」工作表');
+      return [];
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    
+    if (data.length <= 1) {
+      Logger.log('⚠️ 工作表無資料（只有標題列）');
+      return [];
+    }
+    
+    Logger.log(`✅ 讀取到 ${data.length - 1} 筆打卡記錄`);
+    Logger.log('');
+    
+    // 按日期分組的打卡記錄
+    const recordsByDate = {};
+    
+    // 從第 2 列開始處理（跳過標題）
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      
+      // ⭐⭐⭐ 根據實際 Sheet 結構讀取欄位
+      const punchTime = row[0];      // 欄 A: 打卡時間 (Date 物件)
+      const recordUserId = String(row[1] || '').trim();  // 欄 B: userId
+      const punchType = String(row[4] || '').trim();     // 欄 E: 打卡類別
+      
+      // 篩選條件 1: 員工ID 必須匹配
+      if (recordUserId !== employeeId) {
+        continue;
+      }
+      
+      // 篩選條件 2: 打卡時間必須是 Date 物件
+      if (!(punchTime instanceof Date)) {
+        Logger.log(`⚠️ 第 ${i + 1} 列的打卡時間不是 Date 物件，跳過`);
+        continue;
+      }
+      
+      // 格式化日期為 YYYY-MM-DD 和 YYYY-MM
+      const dateStr = Utilities.formatDate(punchTime, 'Asia/Taipei', 'yyyy-MM-dd');
+      const recordYearMonth = Utilities.formatDate(punchTime, 'Asia/Taipei', 'yyyy-MM');
+      
+      // 篩選條件 3: 必須是目標月份
+      if (recordYearMonth !== yearMonth) {
+        continue;
+      }
+      
+      // 格式化時間為 HH:mm
+      const timeStr = Utilities.formatDate(punchTime, 'Asia/Taipei', 'HH:mm');
+      
+      Logger.log(`✅ 第 ${i + 1} 列符合: ${dateStr} ${timeStr} (${punchType})`);
+      
+      // 按日期分組
+      if (!recordsByDate[dateStr]) {
+        recordsByDate[dateStr] = {
+          date: dateStr,
+          punchIn: null,
+          punchOut: null,
+          records: []
+        };
+      }
+      
+      // 記錄上班/下班時間
+      if (punchType === '上班') {
+        // 如果有多筆上班記錄，取最早的
+        if (!recordsByDate[dateStr].punchIn) {
+          recordsByDate[dateStr].punchIn = timeStr;
+        }
+      } else if (punchType === '下班') {
+        // 如果有多筆下班記錄，取最晚的
+        recordsByDate[dateStr].punchOut = timeStr;
+      }
+      
+      recordsByDate[dateStr].records.push({
+        time: timeStr,
+        type: punchType
+      });
+    }
+    
+    Logger.log('');
+    Logger.log('🔢 開始計算工作時數...');
+    Logger.log('');
+    
+    // 轉換為陣列並計算工作時數
+    const results = [];
+    
+    for (const dateStr in recordsByDate) {
+      const dayRecord = recordsByDate[dateStr];
+      
+      let workHours = 0;
+      
+      // 如果有上班和下班時間，計算工時
+      if (dayRecord.punchIn && dayRecord.punchOut) {
+        const inTime = new Date(`${dateStr} ${dayRecord.punchIn}`);
+        const outTime = new Date(`${dateStr} ${dayRecord.punchOut}`);
+        
+        const diffMs = outTime - inTime;
+        const totalHours = diffMs / (1000 * 60 * 60);
+        
+        // 扣除午休 1 小時
+        workHours = Math.max(0, totalHours - 1);
+        
+        Logger.log(`   ${dateStr}:`);
+        Logger.log(`      上班: ${dayRecord.punchIn}`);
+        Logger.log(`      下班: ${dayRecord.punchOut}`);
+        Logger.log(`      總時: ${totalHours.toFixed(2)}h`);
+        Logger.log(`      工時: ${workHours.toFixed(2)}h (扣除午休1h)`);
+      } else {
+        Logger.log(`   ${dateStr}: ⚠️ 缺少上班或下班記錄`);
+        if (dayRecord.punchIn) Logger.log(`      有上班: ${dayRecord.punchIn}`);
+        if (dayRecord.punchOut) Logger.log(`      有下班: ${dayRecord.punchOut}`);
+      }
+      
+      results.push({
+        date: dateStr,
+        punchIn: dayRecord.punchIn,
+        punchOut: dayRecord.punchOut,
+        workHours: workHours
+      });
+    }
+    
+    // 按日期排序
+    results.sort((a, b) => a.date.localeCompare(b.date));
+    
+    Logger.log('');
+    Logger.log('📊 統計結果:');
+    Logger.log(`   找到 ${results.length} 天的打卡記錄`);
+    
+    const totalHours = results.reduce((sum, r) => sum + r.workHours, 0);
+    Logger.log(`   總工作時數: ${totalHours.toFixed(2)}h`);
+    
+    return results;
+    
+  } catch (error) {
+    Logger.log('❌ 取得打卡記錄失敗: ' + error.message);
+    Logger.log('   錯誤堆疊: ' + error.stack);
+    return [];
+  }
+}
+
+/**
+ * 🧪 測試函數
+ */
+function testGetAttendanceFinal() {
+  const employeeId = 'Uf664a35632b736301d674d8b2cc3f8c0';
+  const yearMonth = '2026-01';
+  
+  Logger.log('🧪 測試打卡記錄讀取（最終版）');
+  Logger.log('='.repeat(50));
+  Logger.log('');
+  
+  const records = getEmployeeMonthlyAttendanceInternal(employeeId, yearMonth);
+  
+  Logger.log('');
+  Logger.log('='.repeat(50));
+  Logger.log('✅ 測試完成！');
+  Logger.log('');
+  Logger.log('📋 返回的記錄:');
+  Logger.log(JSON.stringify(records, null, 2));
+}
+/**
  * ✅ 取得員工該月份的打卡記錄並計算工時（修正版）
  * 
  * @param {string} employeeId - 員工ID
  * @param {string} yearMonth - 年月 (YYYY-MM)
  * @returns {Array} 打卡記錄陣列
  */
-function getEmployeeMonthlyAttendanceInternal(employeeId, yearMonth) {
-  try {
-    Logger.log('📋 開始取得員工打卡記錄');
-    Logger.log('   員工ID: ' + employeeId);
-    Logger.log('   年月: ' + yearMonth);
+// function getEmployeeMonthlyAttendanceInternal(employeeId, yearMonth) {
+//   try {
+//     Logger.log('📋 開始取得員工打卡記錄');
+//     Logger.log('   員工ID: ' + employeeId);
+//     Logger.log('   年月: ' + yearMonth);
     
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(SHEET_ATTENDANCE);
+//     const ss = SpreadsheetApp.getActiveSpreadsheet();
+//     const sheet = ss.getSheetByName(SHEET_ATTENDANCE);
     
-    if (!sheet) {
-      Logger.log('⚠️ 找不到「打卡紀錄」工作表');
-      return [];
-    }
+//     if (!sheet) {
+//       Logger.log('⚠️ 找不到「打卡紀錄」工作表');
+//       return [];
+//     }
     
-    const data = sheet.getDataRange().getValues();
+//     const data = sheet.getDataRange().getValues();
     
-    if (data.length < 2) {
-      Logger.log('⚠️ 「打卡紀錄」工作表無資料');
-      return [];
-    }
+//     if (data.length < 2) {
+//       Logger.log('⚠️ 「打卡紀錄」工作表無資料');
+//       return [];
+//     }
     
-    const headers = data[0];
-    Logger.log('📊 打卡紀錄欄位: ' + headers.join(', '));
+//     const headers = data[0];
+//     Logger.log('📊 打卡紀錄欄位: ' + headers.join(', '));
     
-    const punchTimeIndex = headers.indexOf('打卡時間');
-    const userIdIndex = headers.indexOf('userId');
-    const typeIndex = headers.indexOf('打卡類別');
-    const noteIndex = headers.indexOf('備註');
-    const auditIndex = headers.indexOf('管理員審核');
+//     const punchTimeIndex = headers.indexOf('打卡時間');
+//     const userIdIndex = headers.indexOf('userId');
+//     const typeIndex = headers.indexOf('打卡類別');
+//     const noteIndex = headers.indexOf('備註');
+//     const auditIndex = headers.indexOf('管理員審核');
     
-    Logger.log('🔍 欄位索引:');
-    Logger.log('   打卡時間: ' + punchTimeIndex);
-    Logger.log('   userId: ' + userIdIndex);
-    Logger.log('   打卡類別: ' + typeIndex);
+//     Logger.log('🔍 欄位索引:');
+//     Logger.log('   打卡時間: ' + punchTimeIndex);
+//     Logger.log('   userId: ' + userIdIndex);
+//     Logger.log('   打卡類別: ' + typeIndex);
     
-    if (punchTimeIndex === -1 || userIdIndex === -1 || typeIndex === -1) {
-      Logger.log('⚠️ 「打卡紀錄」工作表缺少必要欄位');
-      return [];
-    }
+//     if (punchTimeIndex === -1 || userIdIndex === -1 || typeIndex === -1) {
+//       Logger.log('⚠️ 「打卡紀錄」工作表缺少必要欄位');
+//       return [];
+//     }
     
-    // ⭐ 按日期分組打卡記錄（改用陣列儲存所有打卡）
-    const recordsByDate = {};
+//     // ⭐ 按日期分組打卡記錄（改用陣列儲存所有打卡）
+//     const recordsByDate = {};
     
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
+//     for (let i = 1; i < data.length; i++) {
+//       const row = data[i];
       
-      const rowUserId = String(row[userIdIndex] || '').trim();
-      const punchTime = row[punchTimeIndex];
-      const punchType = String(row[typeIndex] || '').trim();
-      const note = row[noteIndex] || '';
-      const audit = row[auditIndex] || '';
+//       const rowUserId = String(row[userIdIndex] || '').trim();
+//       const punchTime = row[punchTimeIndex];
+//       const punchType = String(row[typeIndex] || '').trim();
+//       const note = row[noteIndex] || '';
+//       const audit = row[auditIndex] || '';
       
-      if (rowUserId !== employeeId) continue;
+//       if (rowUserId !== employeeId) continue;
       
-      // 解析打卡時間
-      let punchDate = null;
-      let timeStr = '';
-      let fullDateTime = null;
+//       // 解析打卡時間
+//       let punchDate = null;
+//       let timeStr = '';
+//       let fullDateTime = null;
       
-      if (punchTime instanceof Date) {
-        punchDate = Utilities.formatDate(punchTime, 'Asia/Taipei', 'yyyy-MM-dd');
-        timeStr = Utilities.formatDate(punchTime, 'Asia/Taipei', 'HH:mm');
-        fullDateTime = punchTime;
-      } else if (typeof punchTime === 'string') {
-        const parts = punchTime.split(' ');
-        if (parts.length >= 2) {
-          punchDate = parts[0];
-          timeStr = parts[1].substring(0, 5);
-          try {
-            fullDateTime = new Date(punchTime);
-          } catch (e) {
-            continue;
-          }
-        }
-      } else {
-        continue;
-      }
+//       if (punchTime instanceof Date) {
+//         punchDate = Utilities.formatDate(punchTime, 'Asia/Taipei', 'yyyy-MM-dd');
+//         timeStr = Utilities.formatDate(punchTime, 'Asia/Taipei', 'HH:mm');
+//         fullDateTime = punchTime;
+//       } else if (typeof punchTime === 'string') {
+//         const parts = punchTime.split(' ');
+//         if (parts.length >= 2) {
+//           punchDate = parts[0];
+//           timeStr = parts[1].substring(0, 5);
+//           try {
+//             fullDateTime = new Date(punchTime);
+//           } catch (e) {
+//             continue;
+//           }
+//         }
+//       } else {
+//         continue;
+//       }
       
-      const dateStr = punchDate.substring(0, 7);
-      if (dateStr !== yearMonth) continue;
+//       const dateStr = punchDate.substring(0, 7);
+//       if (dateStr !== yearMonth) continue;
       
-      // 只計算正常打卡或已核准的補打卡
-      const isNormalPunch = (note !== '補打卡');
-      const isApprovedAdjustment = (note === '補打卡' && audit === 'v');
+//       // 只計算正常打卡或已核准的補打卡
+//       const isNormalPunch = (note !== '補打卡');
+//       const isApprovedAdjustment = (note === '補打卡' && audit === 'v');
       
-      if (!isNormalPunch && !isApprovedAdjustment) {
-        Logger.log(`   ⏭️ 跳過 ${punchDate} ${timeStr} 的未核准補打卡`);
-        continue;
-      }
+//       if (!isNormalPunch && !isApprovedAdjustment) {
+//         Logger.log(`   ⏭️ 跳過 ${punchDate} ${timeStr} 的未核准補打卡`);
+//         continue;
+//       }
       
-      // ⭐ 改用陣列儲存所有打卡（支援同一天多次打卡）
-      if (!recordsByDate[punchDate]) {
-        recordsByDate[punchDate] = [];
-      }
+//       // ⭐ 改用陣列儲存所有打卡（支援同一天多次打卡）
+//       if (!recordsByDate[punchDate]) {
+//         recordsByDate[punchDate] = [];
+//       }
       
-      recordsByDate[punchDate].push({
-        type: punchType,
-        time: timeStr,
-        fullDateTime: fullDateTime,
-        note: note
-      });
-    }
+//       recordsByDate[punchDate].push({
+//         type: punchType,
+//         time: timeStr,
+//         fullDateTime: fullDateTime,
+//         note: note
+//       });
+//     }
     
-    Logger.log(`📊 找到 ${Object.keys(recordsByDate).length} 天的打卡記錄`);
+//     Logger.log(`📊 找到 ${Object.keys(recordsByDate).length} 天的打卡記錄`);
     
-    // ⭐⭐⭐ 關鍵修正：配對上下班記錄並計算工時
-    const records = [];
+//     // ⭐⭐⭐ 關鍵修正：配對上下班記錄並計算工時
+//     const records = [];
     
-    Object.keys(recordsByDate).forEach(date => {
-      const dayPunches = recordsByDate[date];
+//     Object.keys(recordsByDate).forEach(date => {
+//       const dayPunches = recordsByDate[date];
       
-      // 按時間排序
-      dayPunches.sort((a, b) => a.fullDateTime - b.fullDateTime);
+//       // 按時間排序
+//       dayPunches.sort((a, b) => a.fullDateTime - b.fullDateTime);
       
-      // 找出上班和下班打卡
-      const punchIns = dayPunches.filter(p => p.type === '上班');
-      const punchOuts = dayPunches.filter(p => p.type === '下班');
+//       // 找出上班和下班打卡
+//       const punchIns = dayPunches.filter(p => p.type === '上班');
+//       const punchOuts = dayPunches.filter(p => p.type === '下班');
       
-      let punchIn = null;
-      let punchOut = null;
-      let workHours = 0;
+//       let punchIn = null;
+//       let punchOut = null;
+//       let workHours = 0;
       
-      // ⭐ 配對邏輯：取第一個上班和最後一個下班
-      if (punchIns.length > 0) {
-        punchIn = punchIns[0].time;
-      }
+//       // ⭐ 配對邏輯：取第一個上班和最後一個下班
+//       if (punchIns.length > 0) {
+//         punchIn = punchIns[0].time;
+//       }
       
-      if (punchOuts.length > 0) {
-        punchOut = punchOuts[punchOuts.length - 1].time;
-      }
+//       if (punchOuts.length > 0) {
+//         punchOut = punchOuts[punchOuts.length - 1].time;
+//       }
       
-      // 計算工時
-      if (punchIn && punchOut) {
-        try {
-          const inTime = new Date(`${date} ${punchIn}`);
-          const outTime = new Date(`${date} ${punchOut}`);
-          const diffMs = outTime - inTime;
+//       // 計算工時
+//       if (punchIn && punchOut) {
+//         try {
+//           const inTime = new Date(`${date} ${punchIn}`);
+//           const outTime = new Date(`${date} ${punchOut}`);
+//           const diffMs = outTime - inTime;
           
-          if (diffMs > 0) {
-            const totalHours = diffMs / (1000 * 60 * 60);
-            const lunchBreak = 1;
-            // workHours = Math.max(0, totalHours - lunchBreak);
-            workHours = Math.floor(Math.max(0, totalHours - lunchBreak));
-            Logger.log(`   ${date}: ${punchIn} ~ ${punchOut} = ${workHours.toFixed(2)}h (原始: ${totalHours.toFixed(2)}h)`);
-          } else {
-            Logger.log(`   ⚠️ ${date}: ${punchIn} ~ ${punchOut} 時間異常（下班早於上班）`);
-          }
-        } catch (e) {
-          Logger.log(`   ⚠️ 無法計算 ${date} 的工時: ` + e);
-        }
-      } else {
-        Logger.log(`   ⚠️ ${date}: 打卡不完整 (上班: ${punchIn || '無'}, 下班: ${punchOut || '無'})`);
-      }
+//           if (diffMs > 0) {
+//             const totalHours = diffMs / (1000 * 60 * 60);
+//             const lunchBreak = 1;
+//             // workHours = Math.max(0, totalHours - lunchBreak);
+//             workHours = Math.floor(Math.max(0, totalHours - lunchBreak));
+//             Logger.log(`   ${date}: ${punchIn} ~ ${punchOut} = ${workHours.toFixed(2)}h (原始: ${totalHours.toFixed(2)}h)`);
+//           } else {
+//             Logger.log(`   ⚠️ ${date}: ${punchIn} ~ ${punchOut} 時間異常（下班早於上班）`);
+//           }
+//         } catch (e) {
+//           Logger.log(`   ⚠️ 無法計算 ${date} 的工時: ` + e);
+//         }
+//       } else {
+//         Logger.log(`   ⚠️ ${date}: 打卡不完整 (上班: ${punchIn || '無'}, 下班: ${punchOut || '無'})`);
+//       }
       
-      records.push({
-        date: date,
-        punchIn: punchIn,
-        punchOut: punchOut,
-        workHours: workHours
-      });
-    });
+//       records.push({
+//         date: date,
+//         punchIn: punchIn,
+//         punchOut: punchOut,
+//         workHours: workHours
+//       });
+//     });
     
-    // 按日期排序
-    records.sort((a, b) => a.date.localeCompare(b.date));
+//     // 按日期排序
+//     records.sort((a, b) => a.date.localeCompare(b.date));
     
-    Logger.log(`✅ 成功處理 ${records.length} 筆打卡記錄`);
+//     Logger.log(`✅ 成功處理 ${records.length} 筆打卡記錄`);
     
-    return records;
+//     return records;
     
-  } catch (error) {
-    Logger.log('❌ 取得打卡記錄失敗: ' + error);
-    Logger.log('❌ 錯誤堆疊: ' + error.stack);
-    return [];
-  }
-}
+//   } catch (error) {
+//     Logger.log('❌ 取得打卡記錄失敗: ' + error);
+//     Logger.log('❌ 錯誤堆疊: ' + error.stack);
+//     return [];
+//   }
+// }
 
 /**
  * ✅ 新增 API：取得員工該月份的加班記錄
@@ -1552,12 +1895,12 @@ function getInsuredSalary(salary) {
 /**
  * ✅ 計算月薪資（完整版 - 支援情況一 v3.0）
  */
-function calculateMonthlySalary(employeeId, yearMonth) {
+function calculateDriverSalaryCase1(employeeId, yearMonth) {
   try {
     Logger.log('═══════════════════════════════════════');
-    Logger.log('💰 開始計算月薪資（情況一 v3.0）');
-    Logger.log(`   員工ID: ${employeeId}`);
-    Logger.log(`   年月: ${yearMonth}`);
+    Logger.log('🚛 開始計算飼料廠司機薪資（情況一）');
+    Logger.log('   員工ID: ' + employeeId);
+    Logger.log('   年月: ' + yearMonth);
     Logger.log('═══════════════════════════════════════');
     
     // 步驟 1：取得員工薪資設定
@@ -3844,4 +4187,581 @@ function testCompleteFlow() {
   } else {
     Logger.log('❌ 數據仍有問題，請檢查');
   }
+}
+
+/**
+ * ============================================================
+ * 📋 增強版打卡記錄除錯工具
+ * ============================================================
+ * 用途：診斷打卡記錄 Sheet 的資料結構問題
+ * 
+ * 使用方法：
+ * 1. 將此程式碼貼到 Google Apps Script 編輯器
+ * 2. 執行 debugPunchRecordsEnhanced()
+ * 3. 查看執行日誌，找出問題所在
+ */
+
+function debugPunchRecordsEnhanced() {
+  const employeeId = 'Uf664a35632b736301d674d8b2cc3f8c0';
+  const yearMonth = '2026-01';
+  
+  Logger.log('🔍 ===== 開始除錯打卡記錄 =====');
+  Logger.log('   員工ID: ' + employeeId);
+  Logger.log('   年月: ' + yearMonth);
+  Logger.log('');
+  
+  // ==================== 步驟 1：檢查 Sheet 是否存在 ====================
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('打卡紀錄');
+  
+  if (!sheet) {
+    Logger.log('❌ 錯誤：找不到「打卡紀錄」工作表！');
+    return;
+  }
+  
+  Logger.log('✅ 找到「打卡紀錄」工作表');
+  Logger.log('');
+  
+  // ==================== 步驟 2：讀取並顯示標題列 ====================
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  Logger.log('📋 標題列（共 ' + headers.length + ' 欄）:');
+  headers.forEach((header, index) => {
+    Logger.log('   欄位 ' + (index + 1) + ': "' + header + '"');
+  });
+  Logger.log('');
+  
+  // ==================== 步驟 3：找出關鍵欄位的位置 ====================
+  const colIndex = {
+    userId: headers.indexOf('員工ID') + 1,
+    date: headers.indexOf('日期') + 1,
+    punchType: headers.indexOf('打卡類別') + 1,
+    time: headers.indexOf('時間') + 1,
+    location: headers.indexOf('地點') + 1,
+    note: headers.indexOf('備註') + 1
+  };
+  
+  Logger.log('🔎 關鍵欄位位置:');
+  for (const [field, col] of Object.entries(colIndex)) {
+    if (col === 0) {
+      Logger.log('   ❌ 找不到「' + field + '」欄位');
+    } else {
+      Logger.log('   ✅ ' + field + ': 第 ' + col + ' 欄');
+    }
+  }
+  Logger.log('');
+  
+  // ==================== 步驟 4：讀取所有資料並篩選 ====================
+  const dataRange = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
+  const data = dataRange.getValues();
+  
+  Logger.log('📊 工作表總資料筆數: ' + data.length);
+  Logger.log('');
+  
+  // ==================== 步驟 5：顯示前 5 筆資料樣本 ====================
+  Logger.log('📝 前 5 筆資料樣本:');
+  data.slice(0, 5).forEach((row, index) => {
+    Logger.log('   第 ' + (index + 2) + ' 列:');
+    row.forEach((cell, colNum) => {
+      Logger.log('      欄 ' + (colNum + 1) + ' (' + headers[colNum] + '): ' + cell);
+    });
+    Logger.log('');
+  });
+  
+  // ==================== 步驟 6：篩選符合條件的記錄 ====================
+  Logger.log('🔍 開始篩選記錄...');
+  Logger.log('   篩選條件:');
+  Logger.log('   - 員工ID = "' + employeeId + '"');
+  Logger.log('   - 日期包含 "' + yearMonth + '"');
+  Logger.log('');
+  
+  const matchedRecords = [];
+  
+  data.forEach((row, index) => {
+    const rowUserId = String(row[colIndex.userId - 1] || '').trim();
+    const rowDate = row[colIndex.date - 1];
+    const rowPunchType = String(row[colIndex.punchType - 1] || '').trim();
+    
+    // 將 Date 物件轉換為字串
+    let rowDateStr = '';
+    if (rowDate instanceof Date) {
+      rowDateStr = Utilities.formatDate(rowDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    } else {
+      rowDateStr = String(rowDate || '');
+    }
+    
+    // 詳細日誌
+    if (index < 10 || rowDateStr.indexOf(yearMonth) >= 0) { // 顯示前10筆或符合月份的
+      Logger.log('   第 ' + (index + 2) + ' 列檢查:');
+      Logger.log('      員工ID: "' + rowUserId + '" (符合: ' + (rowUserId === employeeId) + ')');
+      Logger.log('      日期: "' + rowDateStr + '" (包含 ' + yearMonth + ': ' + (rowDateStr.indexOf(yearMonth) >= 0) + ')');
+      Logger.log('      打卡類別: "' + rowPunchType + '"');
+    }
+    
+    // 符合條件
+    if (rowUserId === employeeId && rowDateStr.indexOf(yearMonth) >= 0) {
+      matchedRecords.push({
+        row: index + 2,
+        userId: rowUserId,
+        date: rowDateStr,
+        punchType: rowPunchType,
+        time: row[colIndex.time - 1],
+        location: row[colIndex.location - 1],
+        note: row[colIndex.note - 1]
+      });
+    }
+  });
+  
+  // ==================== 步驟 7：顯示結果 ====================
+  Logger.log('');
+  Logger.log('✅ 篩選完成！');
+  Logger.log('   符合條件的記錄數: ' + matchedRecords.length);
+  Logger.log('');
+  
+  if (matchedRecords.length > 0) {
+    Logger.log('📋 符合條件的記錄:');
+    matchedRecords.forEach((record, index) => {
+      Logger.log('   第 ' + (index + 1) + ' 筆 (Sheet 第 ' + record.row + ' 列):');
+      Logger.log('      日期: ' + record.date);
+      Logger.log('      打卡類別: ' + record.punchType);
+      Logger.log('      時間: ' + record.time);
+      Logger.log('      地點: ' + record.location);
+      Logger.log('      備註: ' + record.note);
+      Logger.log('');
+    });
+  } else {
+    Logger.log('❌ 沒有找到符合條件的記錄！');
+    Logger.log('');
+    Logger.log('🔍 可能的原因:');
+    Logger.log('   1. 員工ID 不匹配（注意大小寫、空格）');
+    Logger.log('   2. 日期格式不符（需要包含 "2026-01"）');
+    Logger.log('   3. 資料在不同的工作表');
+    Logger.log('   4. 欄位名稱不正確');
+  }
+  
+  Logger.log('');
+  Logger.log('🔍 ===== 除錯完成 =====');
+}
+
+
+// ==================================================================================
+// 批次修正銀行代碼格式 - 完整版
+// ==================================================================================
+//
+// 用途：修正 Google Sheets 中被自動轉換的銀行代碼
+// 問題：
+//   - "902" 被轉成日期 "1902/3/20"
+//   - "007" 被轉成數字 "7"（前導零被移除）
+//
+// 解決方案：
+//   1. 移除所有非數字字符
+//   2. 補零到 3 位數
+//   3. 加上單引號前綴 '007（強制文字格式）
+//   4. 設定儲存格格式為文字 @
+//
+// ==================================================================================
+
+/**
+ * ✅ 修正「月薪資記錄」工作表的銀行代碼
+ * 
+ * 執行此函數會：
+ * 1. 讀取 AR 欄（第 45 欄）的所有銀行代碼
+ * 2. 將每個代碼標準化為 '007 格式
+ * 3. 寫回工作表並設定為文字格式
+ */
+function fixBankCodeInSalarySheet() {
+  try {
+    Logger.log('🔧 開始修正「月薪資記錄」的銀行代碼...');
+    Logger.log('');
+    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('月薪資記錄');
+    
+    if (!sheet) {
+      Logger.log('❌ 找不到「月薪資記錄」工作表');
+      return { success: false, message: '找不到工作表' };
+    }
+    
+    const lastRow = sheet.getLastRow();
+    
+    if (lastRow <= 1) {
+      Logger.log('⚠️ 工作表沒有資料');
+      return { success: true, message: '沒有資料需要修正' };
+    }
+    
+    Logger.log(`📊 工作表資料筆數: ${lastRow - 1}`);
+    
+    const bankCodeCol = 45;  // AR 欄
+    const range = sheet.getRange(2, bankCodeCol, lastRow - 1, 1);
+    const values = range.getValues();
+    
+    Logger.log('');
+    Logger.log('📋 開始處理銀行代碼...');
+    Logger.log('');
+    
+    let fixedCount = 0;
+    let skippedCount = 0;
+    
+    const fixedValues = values.map((row, index) => {
+      let bankCode = row[0];
+      
+      Logger.log(`處理第 ${index + 2} 行:`);
+      Logger.log(`   原始值: "${bankCode}" (類型: ${typeof bankCode})`);
+      
+      // 如果是空值，保持空白
+      if (!bankCode || bankCode === '') {
+        Logger.log(`   → 保持空白`);
+        skippedCount++;
+        return [""];
+      }
+      
+      // ⭐⭐⭐ 處理日期物件：1902/3/20 → 提取年份 → 902
+      if (bankCode instanceof Date) {
+        const year = bankCode.getFullYear();  // 1902
+        bankCode = String(year).substring(1);  // "902"
+        Logger.log(`   → 檢測到 Date 對象，提取年份: "${bankCode}"`);
+      } else {
+        // 移除所有非數字字符
+        bankCode = String(bankCode).replace(/[^0-9]/g, '');
+        Logger.log(`   → 移除非數字字符: "${bankCode}"`);
+      }
+      
+      // 補零到 3 位數
+      if (bankCode.length > 0) {
+        bankCode = bankCode.padStart(3, '0');
+        Logger.log(`   → 補零: "${bankCode}"`);
+      }
+      
+      // 加上單引號前綴
+      const finalCode = "'" + bankCode;
+      Logger.log(`   → 最終值: "${finalCode}"`);
+      Logger.log('');
+      
+      fixedCount++;
+      return [finalCode];
+    });
+    
+    // 寫回工作表
+    Logger.log('💾 寫回工作表...');
+    
+    // 先設定為文字格式
+    range.setNumberFormat('@');
+    
+    // 再寫入數值
+    range.setValues(fixedValues);
+    
+    Logger.log('');
+    Logger.log('═══════════════════════════════════════');
+    Logger.log('✅ 修正完成！');
+    Logger.log('═══════════════════════════════════════');
+    Logger.log(`   處理筆數: ${fixedCount}`);
+    Logger.log(`   跳過筆數: ${skippedCount}`);
+    Logger.log('');
+    Logger.log('📋 範例結果:');
+    Logger.log('   "1902/3/20" → \'902');
+    Logger.log('   "7" → \'007');
+    Logger.log('   "810 wgsgsgs" → \'810');
+    Logger.log('');
+    
+    return {
+      success: true,
+      message: `修正完成（${fixedCount} 筆）`,
+      fixedCount: fixedCount,
+      skippedCount: skippedCount
+    };
+    
+  } catch (error) {
+    Logger.log('❌ 修正失敗: ' + error.message);
+    Logger.log('   錯誤堆疊: ' + error.stack);
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * ✅ 修正「員工薪資設定」工作表的銀行代碼
+ * 
+ * 執行此函數會：
+ * 1. 讀取 P 欄（第 16 欄）的所有銀行代碼
+ * 2. 將每個代碼標準化為 '007 格式
+ * 3. 寫回工作表並設定為文字格式
+ */
+function fixBankCodeInConfigSheet() {
+  try {
+    Logger.log('🔧 開始修正「員工薪資設定」的銀行代碼...');
+    Logger.log('');
+    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('員工薪資設定');
+    
+    if (!sheet) {
+      Logger.log('❌ 找不到「員工薪資設定」工作表');
+      return { success: false, message: '找不到工作表' };
+    }
+    
+    const lastRow = sheet.getLastRow();
+    
+    if (lastRow <= 1) {
+      Logger.log('⚠️ 工作表沒有資料');
+      return { success: true, message: '沒有資料需要修正' };
+    }
+    
+    Logger.log(`📊 工作表資料筆數: ${lastRow - 1}`);
+    
+    const bankCodeCol = 16;  // P 欄
+    const range = sheet.getRange(2, bankCodeCol, lastRow - 1, 1);
+    const values = range.getValues();
+    
+    Logger.log('');
+    Logger.log('📋 開始處理銀行代碼...');
+    Logger.log('');
+    
+    let fixedCount = 0;
+    let skippedCount = 0;
+    
+    const fixedValues = values.map((row, index) => {
+      let bankCode = row[0];
+      
+      Logger.log(`處理第 ${index + 2} 行:`);
+      Logger.log(`   原始值: "${bankCode}" (類型: ${typeof bankCode})`);
+      
+      // 如果是空值，保持空白
+      if (!bankCode || bankCode === '') {
+        Logger.log(`   → 保持空白`);
+        skippedCount++;
+        return [""];
+      }
+      
+      // ⭐⭐⭐ 處理日期物件：1902/3/20 → 提取年份 → 902
+      if (bankCode instanceof Date) {
+        const year = bankCode.getFullYear();  // 1902
+        bankCode = String(year).substring(1);  // "902"
+        Logger.log(`   → 檢測到 Date 對象，提取年份: "${bankCode}"`);
+      } else {
+        // 移除所有非數字字符
+        bankCode = String(bankCode).replace(/[^0-9]/g, '');
+        Logger.log(`   → 移除非數字字符: "${bankCode}"`);
+      }
+      
+      // 補零到 3 位數
+      if (bankCode.length > 0) {
+        bankCode = bankCode.padStart(3, '0');
+        Logger.log(`   → 補零: "${bankCode}"`);
+      }
+      
+      // 加上單引號前綴
+      const finalCode = "'" + bankCode;
+      Logger.log(`   → 最終值: "${finalCode}"`);
+      Logger.log('');
+      
+      fixedCount++;
+      return [finalCode];
+    });
+    
+    // 寫回工作表
+    Logger.log('💾 寫回工作表...');
+    
+    // 先設定為文字格式
+    range.setNumberFormat('@');
+    
+    // 再寫入數值
+    range.setValues(fixedValues);
+    
+    Logger.log('');
+    Logger.log('═══════════════════════════════════════');
+    Logger.log('✅ 修正完成！');
+    Logger.log('═══════════════════════════════════════');
+    Logger.log(`   處理筆數: ${fixedCount}`);
+    Logger.log(`   跳過筆數: ${skippedCount}`);
+    Logger.log('');
+    Logger.log('📋 範例結果:');
+    Logger.log('   "1902/3/20" → \'902');
+    Logger.log('   "7" → \'007');
+    Logger.log('   "810 wgsgsgs" → \'810');
+    Logger.log('');
+    
+    return {
+      success: true,
+      message: `修正完成（${fixedCount} 筆）`,
+      fixedCount: fixedCount,
+      skippedCount: skippedCount
+    };
+    
+  } catch (error) {
+    Logger.log('❌ 修正失敗: ' + error.message);
+    Logger.log('   錯誤堆疊: ' + error.stack);
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * ✅ 一鍵修正所有銀行代碼
+ * 
+ * 執行此函數會同時修正：
+ * 1. 月薪資記錄（AR 欄）
+ * 2. 員工薪資設定（P 欄）
+ */
+function fixAllBankCodes() {
+  Logger.log('🚀 開始批次修正所有銀行代碼...');
+  Logger.log('');
+  Logger.log('═══════════════════════════════════════');
+  
+  // 修正月薪資記錄
+  Logger.log('📝 步驟 1/2: 修正「月薪資記錄」');
+  Logger.log('═══════════════════════════════════════');
+  const result1 = fixBankCodeInSalarySheet();
+  
+  Logger.log('');
+  Logger.log('═══════════════════════════════════════');
+  Logger.log('📝 步驟 2/2: 修正「員工薪資設定」');
+  Logger.log('═══════════════════════════════════════');
+  const result2 = fixBankCodeInConfigSheet();
+  
+  Logger.log('');
+  Logger.log('═══════════════════════════════════════');
+  Logger.log('✅✅✅ 所有銀行代碼修正完成！');
+  Logger.log('═══════════════════════════════════════');
+  Logger.log('');
+  Logger.log('📊 修正摘要:');
+  Logger.log(`   月薪資記錄: ${result1.message}`);
+  Logger.log(`   員工薪資設定: ${result2.message}`);
+  Logger.log('');
+  Logger.log('🔍 下一步:');
+  Logger.log('   1. 打開 Google Sheets 檢查 AR 欄和 P 欄');
+  Logger.log('   2. 確認銀行代碼格式為 \'007');
+  Logger.log('   3. 前端測試銀行名稱是否正確顯示');
+  Logger.log('');
+}
+
+/**
+ * 🧪 測試單一銀行代碼處理邏輯
+ */
+function testBankCodeProcessing() {
+  Logger.log('🧪 測試銀行代碼處理邏輯...');
+  Logger.log('');
+  
+  const testCases = [
+    { input: new Date('1902-03-20'), expected: "'902", description: 'Date 對象 1902/3/20' },
+    { input: '7', expected: "'007", description: '前導零被移除' },
+    { input: '810 wgsgsgs', expected: "'810", description: '包含文字' },
+    { input: '004', expected: "'004", description: '正常格式' },
+    { input: '', expected: '', description: '空字串' },
+    { input: 'abc123xyz', expected: "'123", description: '混合字符' }
+  ];
+  
+  testCases.forEach((test, index) => {
+    let bankCode = test.input;
+    
+    Logger.log(`測試 ${index + 1}: ${test.description}`);
+    Logger.log(`   輸入: "${bankCode}" (類型: ${typeof bankCode})`);
+    
+    // 處理 Date 對象
+    if (bankCode instanceof Date) {
+      const year = bankCode.getFullYear();
+      bankCode = String(year).substring(1);
+    } else if (bankCode !== '') {
+      // 移除非數字
+      bankCode = String(bankCode).replace(/[^0-9]/g, '');
+    }
+    
+    // 補零
+    if (bankCode.length > 0) {
+      bankCode = bankCode.padStart(3, '0');
+    }
+    
+    // 加單引號
+    const result = bankCode ? "'" + bankCode : '';
+    
+    const passed = result === test.expected ? '✅' : '❌';
+    Logger.log(`   輸出: "${result}"`);
+    Logger.log(`   預期: "${test.expected}"`);
+    Logger.log(`   結果: ${passed}`);
+    Logger.log('');
+  });
+  
+  Logger.log('✅ 測試完成');
+}
+
+
+/**
+ * 🧪 完整診斷測試
+ */
+function diagnoseSalaryCalculation() {
+  const employeeId = 'Uf664a35632b736301d674d8b2cc3f8c0';  // 替換成實際員工ID
+  const yearMonth = '2026-01';
+  
+  console.log('═══════════════════════════════════════');
+  console.log('🔍 開始診斷薪資計算流程');
+  console.log('═══════════════════════════════════════');
+  
+  // 步驟 1：檢查員工薪資設定
+  console.log('\n📋 步驟 1: 檢查員工薪資設定');
+  const salaryConfig = getEmployeeSalaryTW(employeeId);
+  console.log('結果:', salaryConfig);
+  
+  if (!salaryConfig.success) {
+    console.error('❌ 找不到員工薪資設定！');
+    return;
+  }
+  
+  // 步驟 2：檢查加班記錄
+  console.log('\n📋 步驟 2: 檢查加班記錄');
+  const overtimeRecords = getEmployeeMonthlyOvertime(employeeId, yearMonth);
+  console.log('加班記錄數量:', overtimeRecords.length);
+  console.log('加班記錄內容:', JSON.stringify(overtimeRecords, null, 2));
+  
+  if (overtimeRecords.length === 0) {
+    console.warn('⚠️ 沒有找到加班記錄！');
+    console.log('可能原因：');
+    console.log('  1. 該員工該月份沒有加班');
+    console.log('  2. 加班申請尚未核准（狀態不是 "approved"）');
+    console.log('  3. 加班記錄的員工ID或日期格式不符');
+  }
+  
+  // 步驟 3：檢查「加班申請」工作表
+  console.log('\n📋 步驟 3: 檢查「加班申請」工作表');
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('加班申請');
+  
+  if (!sheet) {
+    console.error('❌ 找不到「加班申請」工作表！');
+    return;
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  
+  console.log('工作表欄位:', headers.join(', '));
+  console.log('資料筆數:', data.length - 1);
+  
+  // 顯示該員工的所有加班記錄（包含未核准的）
+  console.log('\n該員工的所有加班記錄：');
+  for (let i = 1; i < data.length; i++) {
+    const rowUserId = String(data[i][1] || '').trim();
+    
+    if (rowUserId === employeeId) {
+      const date = data[i][3];
+      const hours = data[i][6];
+      const status = String(data[i][9] || '').trim();
+      
+      console.log(`  第 ${i + 1} 列: ${date}, ${hours}h, 狀態=${status}`);
+    }
+  }
+  
+  // 步驟 4：執行薪資計算
+  console.log('\n📋 步驟 4: 執行薪資計算');
+  const calcResult = calculateMonthlySalary(employeeId, yearMonth);
+  
+  console.log('計算結果:', calcResult);
+  
+  if (calcResult.ok && calcResult.data) {
+    console.log('\n✅ 薪資計算成功！');
+    console.log('加班時數:', calcResult.data.totalOvertimeHours);
+    console.log('平日加班費:', calcResult.data.weekdayOvertimePay);
+    console.log('休息日加班費:', calcResult.data.restdayOvertimePay);
+    console.log('例假日加班費:', calcResult.data.holidayOvertimePay);
+  } else {
+    console.error('❌ 薪資計算失敗:', calcResult.msg || calcResult.message);
+  }
+  
+  console.log('\n═══════════════════════════════════════');
+  console.log('✅ 診斷完成');
+  console.log('═══════════════════════════════════════');
 }

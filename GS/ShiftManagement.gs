@@ -195,14 +195,25 @@ function checkDuplicateShift(employeeId, date) {
   return false;
 }
 
-/**
- * 批量新增排班 (⭐ 已修正 - 使用格式化函數)
- */
 function batchAddShifts(shiftsArray) {
   try {
     const sheet = getShiftSheet();
     const userId = Session.getActiveUser().getEmail();
     const timestamp = formatDateTime(new Date());
+    
+    // ⭐⭐⭐ 關鍵：預先檢查所有重複
+    const existingShifts = new Set();
+    const data = sheet.getDataRange().getValues();
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][13] !== '已刪除') {
+        const key = `${data[i][1]}_${formatDateOnly(data[i][3])}`;
+        existingShifts.add(key);
+      }
+    }
+    
+    Logger.log(`📊 Sheet 中現有 ${existingShifts.size} 筆排班記錄`);
+    
     const results = {
       success: 0,
       failed: 0,
@@ -211,16 +222,17 @@ function batchAddShifts(shiftsArray) {
     
     shiftsArray.forEach((shiftData, index) => {
       try {
-        // 檢查重複
-        if (checkDuplicateShift(shiftData.employeeId, shiftData.date)) {
+        const key = `${shiftData.employeeId}_${formatDateOnly(shiftData.date)}`;
+        
+        // ⭐ 使用預先建立的 Set 檢查重複
+        if (existingShifts.has(key)) {
           results.failed++;
-          results.errors.push(`第 ${index + 1} 筆: 該員工在此日期已有排班`);
+          results.errors.push(`第 ${index + 1} 筆: ${shiftData.employeeName} 在 ${shiftData.date} 已有排班`);
           return;
         }
         
         const shiftId = 'SHIFT-' + Utilities.getUuid();
         
-        // ✅ 使用格式化函數
         const rowData = [
           shiftId,
           shiftData.employeeId,
@@ -239,6 +251,10 @@ function batchAddShifts(shiftsArray) {
         ];
         
         sheet.appendRow(rowData);
+        
+        // ⭐ 新增後也加入 Set，避免本次批量內的重複
+        existingShifts.add(key);
+        
         results.success++;
         
       } catch (e) {
