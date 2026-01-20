@@ -586,48 +586,48 @@ function displayEmployeeSalary(data) {
     const totalWorkHoursInt = Math.floor(totalWorkHours);
     const totalOvertimeHoursInt = Math.floor(totalOvertimeHours);
     // 找到平日加班費的元素
-    const weekdayOvertimeEl = document.getElementById('detail-weekday-overtime');
-    if (weekdayOvertimeEl && weekdayOvertimeEl.parentElement) {
-        // 移除舊的工時資訊（如果存在）
-        const oldWorkHoursInfo = weekdayOvertimeEl.parentElement.querySelector('.work-hours-summary');
-        if (oldWorkHoursInfo) {
-            oldWorkHoursInfo.remove();
-        }
+    // const weekdayOvertimeEl = document.getElementById('detail-weekday-overtime');
+    // if (weekdayOvertimeEl && weekdayOvertimeEl.parentElement) {
+    //     // 移除舊的工時資訊（如果存在）
+    //     const oldWorkHoursInfo = weekdayOvertimeEl.parentElement.querySelector('.work-hours-summary');
+    //     if (oldWorkHoursInfo) {
+    //         oldWorkHoursInfo.remove();
+    //     }
         
-        // 只有在有工時或加班時數時才顯示
-        if (totalWorkHours > 0 || totalOvertimeHours > 0) {
-            const workHoursSummary = document.createElement('div');
-            workHoursSummary.className = 'work-hours-summary mb-3 p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg';
+    //     // 只有在有工時或加班時數時才顯示
+    //     if (totalWorkHours > 0 || totalOvertimeHours > 0) {
+    //         const workHoursSummary = document.createElement('div');
+    //         workHoursSummary.className = 'work-hours-summary mb-3 p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg';
             
-            let summaryHTML = '<div class="text-sm font-semibold text-blue-300 mb-2">本月工時統計</div>';
+    //         let summaryHTML = '<div class="text-sm font-semibold text-blue-300 mb-2">本月工時統計</div>';
             
-            if (isHourly && totalWorkHours > 0) {
-                summaryHTML += `
-                    <div class="flex justify-between text-sm mb-1">
-                        <span class="text-blue-200">打卡工作時數：</span>
-                        <span class="font-mono text-blue-100">${Math.floor(totalWorkHours)}h</span>
-                    </div>
-                `;
-            }
+    //         if (isHourly && totalWorkHours > 0) {
+    //             summaryHTML += `
+    //                 <div class="flex justify-between text-sm mb-1">
+    //                     <span class="text-blue-200">打卡工作時數：</span>
+    //                     <span class="font-mono text-blue-100">${Math.floor(totalWorkHours)}h</span>
+    //                 </div>
+    //             `;
+    //         }
             
-            if (totalOvertimeHours > 0) {
-                summaryHTML += `
-                    <div class="flex justify-between text-sm">
-                        <span class="text-orange-200">加班時數：</span>
-                        <span class="font-mono text-orange-100">${totalOvertimeHours.toFixed(1)}h</span>
-                    </div>
-                `;
-            }
+    //         if (totalOvertimeHours > 0) {
+    //             summaryHTML += `
+    //                 <div class="flex justify-between text-sm">
+    //                     <span class="text-orange-200">加班時數：</span>
+    //                     <span class="font-mono text-orange-100">${totalOvertimeHours.toFixed(1)}h</span>
+    //                 </div>
+    //             `;
+    //         }
             
-            workHoursSummary.innerHTML = summaryHTML;
+    //         workHoursSummary.innerHTML = summaryHTML;
             
-            // 插入到平日加班費之前
-            weekdayOvertimeEl.parentElement.parentElement.insertBefore(
-                workHoursSummary,
-                weekdayOvertimeEl.parentElement
-            );
-        }
-    }
+    //         // 插入到平日加班費之前
+    //         weekdayOvertimeEl.parentElement.parentElement.insertBefore(
+    //             workHoursSummary,
+    //             weekdayOvertimeEl.parentElement
+    //         );
+    //     }
+    // }
    
     // 其他津貼（時薪和月薪都顯示）
     safeSet('detail-position-allowance', formatCurrency(data['職務加給'] || 0));
@@ -1748,9 +1748,9 @@ async function loadAttendanceDetails(yearMonth) {
         }
         
         // 顯示加班記錄（直接用 API 回傳的資料）
-        if (data.totalOvertimeHours > 0) {
-            displayOvertimeFromCalculation(data);
-        }
+        // if (data.totalOvertimeHours > 0) {
+        //     displayOvertimeFromCalculation(data);
+        // }
         
     } catch (error) {
         console.error('❌ 載入出勤明細失敗:', error);
