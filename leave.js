@@ -95,6 +95,7 @@ async function refreshLeaveData() {
 
 /**
 ✅ 完全修正版：計算工作時數（08:00-17:00，扣除 12:00-13:00）
+⭐ 支持 0.5 小時精度
  */
 function calculateWorkHours(startTime, endTime) {
     if (!startTime || !endTime) {
@@ -137,7 +138,7 @@ function calculateWorkHours(startTime, endTime) {
     if (isSameDay) {
         console.log('   ℹ️ 同日請假');
         
-        // ⭐ 限制在工作時間內
+        // ⭐ 限制在工作時間內，支持 0.5 小時精度
         const startHour = Math.max(
             start.getHours() + start.getMinutes() / 60,
             WORK_START_HOUR
@@ -165,7 +166,9 @@ function calculateWorkHours(startTime, endTime) {
         }
         
         workHours = Math.max(0, workHours);
-        const finalHours = Math.round(workHours * 100) / 100;
+        
+        // ⭐ 修改：四捨五入到 0.5 小時精度
+        const finalHours = Math.round(workHours * 2) / 2;
         
         console.log(`   ✅ 同日請假工時: ${finalHours} 小時`);
         
@@ -238,8 +241,8 @@ function calculateWorkHours(startTime, endTime) {
         
         console.log(`   📅 最後一天 (${end.toLocaleDateString()}): ${lastDayHours.toFixed(2)} 小時`);
         
-        // 四捨五入到小數點後 2 位
-        const finalHours = Math.round(totalWorkHours * 100) / 100;
+        // ⭐ 修改：四捨五入到 0.5 小時精度
+        const finalHours = Math.round(totalWorkHours * 2) / 2;
         
         console.log(`   ✅ 跨日請假總工時: ${finalHours} 小時`);
         
@@ -247,8 +250,10 @@ function calculateWorkHours(startTime, endTime) {
     }
 }
 
+
 /**
  * 更新工時預覽（即時顯示）
+ * ⭐ 支持 0.5 小時精度驗證
  */
 function updateWorkHoursPreview() {
     console.log('🔄 updateWorkHoursPreview 被觸發');
@@ -286,16 +291,19 @@ function updateWorkHoursPreview() {
         warningEl.textContent = '';
     }
     
-    // 檢查各種錯誤情況
+    // ⭐ 修改：檢查各種錯誤情況（支持 0.5 小時）
     let hasError = false;
     let errorMsg = '';
     
     if (workHours <= 0) {
         hasError = true;
         errorMsg = '❌ 結束時間必須晚於開始時間';
-    } else if (!Number.isInteger(workHours)) {
+    } else if (workHours < 0.5) {
         hasError = true;
-        errorMsg = `❌ 請假時數必須是整數小時（目前為 ${workHours} 小時）\n請調整時間使其為整數小時`;
+        errorMsg = '❌ 請假時數最少為 0.5 小時';
+    } else if ((workHours * 2) % 1 !== 0) {
+        hasError = true;
+        errorMsg = `❌ 請假時數必須是 0.5 小時的倍數（目前為 ${workHours} 小時）\n請調整時間為 0.5, 1.0, 1.5, 2.0 等`;
     } else {
         const start = new Date(startTime);
         const end = new Date(endTime);
@@ -334,8 +342,10 @@ function updateWorkHoursPreview() {
     }
 }
 
+
 /**
  * 快速選擇時段
+ * ⭐ 新增 0.5 小時選項
  */
 function quickSelectTimeRange(type) {
     console.log('🎯 快速選擇:', type);
@@ -346,6 +356,11 @@ function quickSelectTimeRange(type) {
     let startTime, endTime;
     
     switch(type) {
+        case '0.5h':  // ⭐ 新增
+            startTime = `${today}T${STANDARD_WORK_HOURS.START_TIME}`;
+            endTime = `${today}T08:30`;
+            break;
+            
         case '1h':
             startTime = `${today}T${STANDARD_WORK_HOURS.START_TIME}`;
             endTime = `${today}T09:00`;
@@ -410,17 +425,17 @@ async function submitLeaveApplication() {
         const balanceRes = await callApifetch('getLeaveBalance');
         
         if (balanceRes.ok && balanceRes.balance) {
-            const availableHours = balanceRes.balance[leaveType] || 0;  // ⭐ 直接是小時
+            const availableHours = balanceRes.balance[leaveType] || 0;
             
             console.log(`💰 假期餘額檢查:`, {
                 假別: leaveType,
-                可用小時: availableHours,  // ⭐
-                申請小時: workHours        // ⭐
+                可用小時: availableHours,
+                申請小時: workHours
             });
             
-            if (workHours > availableHours) {  // ⭐ 直接比較小時數
+            if (workHours > availableHours) {
                 showNotification(
-                    `餘額不足！${t(leaveType)} 剩餘 ${availableHours} 小時，但您申請了 ${workHours} 小時`,  // ⭐
+                    `餘額不足！${t(leaveType)} 剩餘 ${availableHours} 小時，但您申請了 ${workHours} 小時`,
                     'error'
                 );
                 return;
@@ -478,8 +493,10 @@ async function submitLeaveApplication() {
         }
     }
 }
+
 /**
  * 驗證請假表單
+ * ⭐ 支持 0.5 小時精度
  */
 function validateLeaveForm() {
     const leaveType = document.getElementById('leave-type').value;
@@ -502,17 +519,18 @@ function validateLeaveForm() {
         return false;
     }
     
-    // ⭐⭐⭐ 新增：檢查是否為整點時間
+    // ⭐ 移除：不再檢查是否為整點時間，允許 30 分鐘
     const start = new Date(startTime);
     const end = new Date(endTime);
     
-    if (start.getMinutes() !== 0 || start.getSeconds() !== 0) {
-        showNotification('開始時間必須是整點（例如：09:00, 10:00）', 'error');
+    // ⭐ 新增：檢查是否為 30 分鐘的倍數
+    if (start.getMinutes() % 30 !== 0 || start.getSeconds() !== 0) {
+        showNotification('開始時間必須是 30 分鐘的倍數（例如：09:00, 09:30, 10:00）', 'error');
         return false;
     }
     
-    if (end.getMinutes() !== 0 || end.getSeconds() !== 0) {
-        showNotification('結束時間必須是整點（例如：09:00, 10:00）', 'error');
+    if (end.getMinutes() % 30 !== 0 || end.getSeconds() !== 0) {
+        showNotification('結束時間必須是 30 分鐘的倍數（例如：09:00, 09:30, 10:00）', 'error');
         return false;
     }
     
@@ -528,12 +546,18 @@ function validateLeaveForm() {
         return false;
     }
     
-    if (!Number.isInteger(workHours)) {
-        showNotification(`請假時數必須是整數小時，目前為 ${workHours} 小時`, 'error');
+    // ⭐ 修改：檢查是否為 0.5 小時的倍數
+    if ((workHours * 2) % 1 !== 0) {
+        showNotification(`請假時數必須是 0.5 小時的倍數，目前為 ${workHours} 小時`, 'error');
         return false;
     }
     
-    // ⭐ 修正：使用已創建的 start 和 end 變數
+    // 檢查是否小於最小值
+    if (workHours < 0.5) {
+        showNotification('請假時數最少為 0.5 小時', 'error');
+        return false;
+    }
+    
     const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
     const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
     const isSameDay = startDate.getTime() === endDate.getTime();
@@ -546,9 +570,6 @@ function validateLeaveForm() {
     return true;
 }
 
-/**
- * 載入假期餘額
- */
 async function loadLeaveBalance() {
     const loadingEl = document.getElementById('leave-balance-loading');
     
@@ -574,6 +595,7 @@ async function loadLeaveBalance() {
         console.log('✅ 假期餘額載入完成');
     }
 }
+
 
 /**
  * ✅ 修正：渲染假期餘額（直接顯示小時數，不需轉換）
@@ -603,8 +625,7 @@ function renderLeaveBalance(balance) {
             typeSpan.className = 'font-medium text-gray-800 dark:text-white';
             typeSpan.textContent = t(leaveType);
             
-            // ⭐⭐⭐ 修正：直接使用小時數（不需轉換）
-            const hours = balance[leaveType];  // 後端已經是小時數了
+            const hours = balance[leaveType];
             
             const hoursSpan = document.createElement('span');
             hoursSpan.className = leaveType === 'ABSENCE_WITHOUT_LEAVE' 
