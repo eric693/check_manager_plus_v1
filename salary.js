@@ -2387,4 +2387,196 @@ async function quickTestSalaryData(yearMonth) {
     }
 }
 
+
+/* ── 工具 ── */
+function rcShowMsg(text, type = 'info') {
+    const el = document.getElementById('recalc-msg');
+    el.textContent = text;
+    el.className = type;
+    el.style.display = 'block';
+  }
+  function rcHideMsg() {
+    document.getElementById('recalc-msg').style.display = 'none';
+  }
+  function rcSetLoading(isSingle, loading) {
+    const id     = isSingle ? 'single' : 'all';
+    const btn    = document.getElementById(`btn-recalc-${isSingle ? 'single' : 'all'}`);
+    const spin   = document.getElementById(`rc-spinner-${id}`);
+    const icon   = document.getElementById(`rc-icon-${id}`);
+    btn.disabled          = loading;
+    spin.style.display    = loading ? 'block' : 'none';
+    icon.style.display    = loading ? 'none'  : 'inline';
+  }
+  function rcSetProgress(current, total) {
+    const pct  = total > 0 ? Math.round((current / total) * 100) : 0;
+    document.getElementById('recalc-progress-bar').style.width  = pct + '%';
+    document.getElementById('recalc-progress-pct').textContent  = pct + '%';
+    document.getElementById('recalc-progress-text').textContent =
+      `計算中... ${current} / ${total}`;
+  }
+  function rcAddResultRow(name, netSalary, ok, errMsg) {
+    const list = document.getElementById('recalc-results');
+    list.style.display = 'block';
+    const row = document.createElement('div');
+    row.className = 'rc-result-row';
+    row.innerHTML = `
+      <span class="rc-result-name">${name}</span>
+      ${ok
+        ? `<span class="rc-result-salary">實發 $${netSalary.toLocaleString()}</span>
+           <span class="rc-result-status ok">✅ 完成</span>`
+        : `<span class="rc-result-status err">❌ ${errMsg || '失敗'}</span>`
+      }
+    `;
+    list.appendChild(row);
+    list.scrollTop = list.scrollHeight;
+  }
+  
+  /* ──────────────────────────────────────────────
+     單人重新計算
+  ────────────────────────────────────────────── */
+  async function recalcSingle() {
+    const employeeId = document.getElementById('recalc-employee-id').value.trim();
+    const yearMonth  = document.getElementById('recalc-month').value;
+  
+    if (!yearMonth) { rcShowMsg('請選擇月份', 'error'); return; }
+  
+    rcHideMsg();
+    rcSetLoading(true, true);
+    document.getElementById('recalc-results').style.display = 'none';
+    document.getElementById('recalc-results').innerHTML = '';
+  
+    try {
+      const params = employeeId
+        ? `recalculateMonthlySalary&yearMonth=${encodeURIComponent(yearMonth)}&employeeId=${encodeURIComponent(employeeId)}`
+        : `recalculateMonthlySalary&yearMonth=${encodeURIComponent(yearMonth)}`;
+  
+      const res = await callApifetch(params);
+  
+      if (res.ok) {
+        const results = Array.isArray(res.data) ? res.data : [res.data];
+        results.forEach(r => rcAddResultRow(r.employeeName || r.employeeId, r.netSalary, true));
+        rcShowMsg(
+          `✅ 重新計算完成（${results.length} 人）`,
+          'success'
+        );
+      } else {
+        rcShowMsg('計算失敗：' + (res.msg || '未知錯誤'), 'error');
+      }
+    } catch (err) {
+      rcShowMsg('發生錯誤：' + err.message, 'error');
+    } finally {
+      rcSetLoading(true, false);
+    }
+  }
+  
+  /* ──────────────────────────────────────────────
+     全員重新計算
+  ────────────────────────────────────────────── */
+  async function recalcAll() {
+    const yearMonth = document.getElementById('recalc-month').value;
+    if (!yearMonth) { rcShowMsg('請選擇月份', 'error'); return; }
+  
+    if (!confirm(`確定要重新計算 ${yearMonth} 所有員工的薪資？`)) return;
+  
+    rcHideMsg();
+    rcSetLoading(false, true);
+    document.getElementById('recalc-results').innerHTML = '';
+    document.getElementById('recalc-results').style.display = 'none';
+  
+    const progressWrap = document.getElementById('recalc-progress-wrap');
+    progressWrap.style.display = 'block';
+    rcSetProgress(0, 1);
+  
+    try {
+      /* Step 1: 取得所有在職員工 */
+      rcShowMsg('取得員工列表中...', 'info');
+      const listRes = await callApifetch('getAllEmployees');
+  
+      if (!listRes.ok || !Array.isArray(listRes.data)) {
+        rcShowMsg('無法取得員工列表', 'error');
+        return;
+      }
+  
+      const employees = listRes.data.filter(e => e.status !== '離職');
+      const total = employees.length;
+  
+      if (total === 0) {
+        rcShowMsg('沒有在職員工', 'error');
+        return;
+      }
+  
+      rcHideMsg();
+      rcSetProgress(0, total);
+  
+      let successCount = 0;
+      let failCount    = 0;
+  
+      /* Step 2: 逐一重算 */
+      for (let i = 0; i < employees.length; i++) {
+        const emp = employees[i];
+        rcSetProgress(i, total);
+        document.getElementById('recalc-progress-text').textContent =
+          `計算中：${emp.employeeName || emp.employeeId}（${i + 1}/${total}）`;
+  
+        try {
+          const res = await callApifetch(
+            `recalculateMonthlySalary&yearMonth=${encodeURIComponent(yearMonth)}&employeeId=${encodeURIComponent(emp.employeeId)}`
+          );
+  
+          if (res.ok) {
+            const r = Array.isArray(res.data) ? res.data[0] : res.data;
+            rcAddResultRow(emp.employeeName || emp.employeeId, r?.netSalary || 0, true);
+            successCount++;
+          } else {
+            rcAddResultRow(emp.employeeName || emp.employeeId, 0, false, res.msg);
+            failCount++;
+          }
+        } catch (e) {
+          rcAddResultRow(emp.employeeName || emp.employeeId, 0, false, e.message);
+          failCount++;
+        }
+  
+        /* 每次請求間稍作停頓，避免觸發 GAS 速率限制 */
+        await new Promise(r => setTimeout(r, 300));
+      }
+  
+      rcSetProgress(total, total);
+  
+      rcShowMsg(
+        `✅ 全員重算完成　成功 ${successCount} 人 ${failCount > 0 ? `／ 失敗 ${failCount} 人` : ''}`,
+        failCount > 0 ? 'info' : 'success'
+      );
+  
+    } catch (err) {
+      rcShowMsg('發生錯誤：' + err.message, 'error');
+    } finally {
+      rcSetLoading(false, false);
+      setTimeout(() => {
+        document.getElementById('recalc-progress-wrap').style.display = 'none';
+      }, 1500);
+    }
+  }
+  
+  /* ──────────────────────────────────────────────
+     初始化：預填當月
+  ────────────────────────────────────────────── */
+  (function initRecalcCard() {
+    const now = new Date();
+    const ym  = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    document.getElementById('recalc-month').value = ym;
+  
+    /* 跟隨管理員薪資 tab 的月份選擇器 */
+    const mainMonthEl = document.getElementById('admin-salary-month');
+    if (mainMonthEl) {
+      document.getElementById('recalc-month').value = mainMonthEl.value || ym;
+      mainMonthEl.addEventListener('change', () => {
+        document.getElementById('recalc-month').value = mainMonthEl.value;
+      });
+    }
+  })();
+
+
+
+
+
 console.log('✅ 員工類型切換功能已載入');

@@ -580,6 +580,168 @@
             }
         }
 
+        /* ===== 重新計算薪資卡片 ===== */
+        #recalc-card {
+          background: linear-gradient(135deg, rgba(245,158,11,0.07) 0%, rgba(239,68,68,0.05) 100%);
+          border: 1px solid rgba(245,158,11,0.2);
+          border-radius: 14px;
+          padding: 1.1rem 1.25rem;
+          margin-bottom: 1.25rem;
+        }
+        .recalc-title {
+          display: flex;
+          align-items: center;
+          gap: 0.45rem;
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #fbbf24;
+          margin-bottom: 0.9rem;
+        }
+        .recalc-controls {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          flex-wrap: wrap;
+        }
+        .recalc-input {
+          flex: 1;
+          min-width: 160px;
+          max-width: 260px;
+          padding: 0.4rem 0.75rem;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 7px;
+          color: #e2e8f0;
+          font-size: 0.82rem;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        .recalc-input:focus { border-color: #fbbf24; }
+        .recalc-input::placeholder { color: #475569; }
+        #recalc-month {
+          padding: 0.4rem 0.7rem;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 7px;
+          color: #e2e8f0;
+          font-size: 0.82rem;
+          outline: none;
+          transition: border-color 0.2s;
+          cursor: pointer;
+        }
+        #recalc-month:focus { border-color: #fbbf24; }
+        .recalc-btn-group {
+          display: flex;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+        #btn-recalc-single {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.42rem 1rem;
+          background: linear-gradient(135deg, #f59e0b, #ef4444);
+          color: #fff;
+          font-size: 0.82rem;
+          font-weight: 600;
+          border: none;
+          border-radius: 7px;
+          cursor: pointer;
+          transition: opacity 0.2s, transform 0.15s;
+          white-space: nowrap;
+        }
+        #btn-recalc-single:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+        #btn-recalc-single:active:not(:disabled) { transform: translateY(0); }
+        #btn-recalc-single:disabled { opacity: 0.45; cursor: not-allowed; }
+        #btn-recalc-all {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.42rem 1rem;
+          background: rgba(245,158,11,0.12);
+          border: 1px solid rgba(245,158,11,0.3);
+          color: #fbbf24;
+          font-size: 0.82rem;
+          font-weight: 600;
+          border-radius: 7px;
+          cursor: pointer;
+          transition: background 0.2s, transform 0.15s;
+          white-space: nowrap;
+        }
+        #btn-recalc-all:hover:not(:disabled) { background: rgba(245,158,11,0.2); transform: translateY(-1px); }
+        #btn-recalc-all:disabled { opacity: 0.45; cursor: not-allowed; }
+        .rc-spinner {
+          width: 12px; height: 12px;
+          border: 2px solid rgba(255,255,255,0.25);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: rc-spin 0.7s linear infinite;
+          display: none;
+        }
+        @keyframes rc-spin { to { transform: rotate(360deg); } }
+        #recalc-progress-wrap {
+          display: none;
+          margin-top: 0.75rem;
+        }
+        .recalc-progress-label {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.75rem;
+          color: #94a3b8;
+          margin-bottom: 0.3rem;
+        }
+        .recalc-progress-bar-bg {
+          height: 5px;
+          background: rgba(255,255,255,0.07);
+          border-radius: 999px;
+          overflow: hidden;
+        }
+        #recalc-progress-bar {
+          height: 100%;
+          background: linear-gradient(90deg, #f59e0b, #ef4444);
+          border-radius: 999px;
+          width: 0%;
+          transition: width 0.3s ease;
+        }
+        #recalc-results {
+          display: none;
+          margin-top: 0.75rem;
+          max-height: 220px;
+          overflow-y: auto;
+          border-radius: 8px;
+          border: 1px solid rgba(255,255,255,0.06);
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255,255,255,0.1) transparent;
+        }
+        #recalc-results::-webkit-scrollbar { width: 4px; }
+        #recalc-results::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+        .rc-result-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.45rem 0.75rem;
+          font-size: 0.78rem;
+          border-bottom: 1px solid rgba(255,255,255,0.04);
+          gap: 0.5rem;
+        }
+        .rc-result-row:last-child { border-bottom: none; }
+        .rc-result-name { color: #94a3b8; font-weight: 500; flex: 1; }
+        .rc-result-status { font-size: 0.72rem; white-space: nowrap; }
+        .rc-result-status.ok  { color: #34d399; }
+        .rc-result-status.err { color: #f87171; }
+        .rc-result-salary { font-family: monospace; font-size: 0.78rem; color: #818cf8; }
+        #recalc-msg {
+          display: none;
+          margin-top: 0.65rem;
+          padding: 0.42rem 0.8rem;
+          border-radius: 6px;
+          font-size: 0.8rem;
+          font-weight: 500;
+        }
+        #recalc-msg.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.22); color: #34d399; }
+        #recalc-msg.error   { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.2);  color: #f87171; }
+        #recalc-msg.info    { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.22); color: #fbbf24; }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -1354,6 +1516,52 @@
             <div class="form-section">
                 <div class="feature-title" data-i18n="SALARY_LIST_TITLE">薪資列表</div>
                 
+                <!-- ★ 重新計算薪資卡片 ★ -->
+                <div id="recalc-card">
+                    <div class="recalc-title">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <polyline points="1 4 1 10 7 10"/>
+                        <path d="M3.51 15a9 9 0 1 0 .49-3.73"/>
+                      </svg>
+                      重新計算薪資
+                    </div>
+                    <div class="recalc-controls">
+                      <input type="text" id="recalc-employee-id" class="recalc-input" placeholder="員工ID（留空則計算全員）" />
+                      <input type="month" id="recalc-month" />
+                      <div class="recalc-btn-group">
+                        <button id="btn-recalc-single" onclick="recalcSingle()">
+                          <div class="rc-spinner" id="rc-spinner-single"></div>
+                          <svg id="rc-icon-single" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="1 4 1 10 7 10"/>
+                            <path d="M3.51 15a9 9 0 1 0 .49-3.73"/>
+                          </svg>
+                          重新計算
+                        </button>
+                        <button id="btn-recalc-all" onclick="recalcAll()">
+                          <div class="rc-spinner" id="rc-spinner-all" style="border-top-color:#fbbf24"></div>
+                          <svg id="rc-icon-all" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                          </svg>
+                          全員重算
+                        </button>
+                      </div>
+                    </div>
+                    <div id="recalc-progress-wrap">
+                      <div class="recalc-progress-label">
+                        <span id="recalc-progress-text">計算中...</span>
+                        <span id="recalc-progress-pct">0%</span>
+                      </div>
+                      <div class="recalc-progress-bar-bg">
+                        <div id="recalc-progress-bar"></div>
+                      </div>
+                    </div>
+                    <div id="recalc-results"></div>
+                    <div id="recalc-msg"></div>
+                </div>
+
                 <!-- ⭐ 新增：匯出工具列（只有管理員可見） -->
                 <div id="admin-export-toolbar" class="export-toolbar" style="display: none; margin-bottom: 2rem; padding: 1rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px;">
                     <div style="flex: 1;">
@@ -1509,7 +1717,10 @@
             if (typeof initSalaryTab === 'function') {
                 initSalaryTab();
             }
-            
+            // ★ 新增這行
+            if (typeof initRecalcCard === 'function') {
+                initRecalcCard();
+            }
             bindAutoCalculation();
             bindHourlyCalculation();
         });
