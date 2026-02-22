@@ -2490,14 +2490,14 @@ function rcShowMsg(text, type = 'info') {
     try {
       /* Step 1: 取得所有在職員工 */
       rcShowMsg('取得員工列表中...', 'info');
-      const listRes = await callApifetch('getAllEmployees');
+      const listRes = await callApifetch('getAllUsers');
   
       if (!listRes.ok || !Array.isArray(listRes.data)) {
         rcShowMsg('無法取得員工列表', 'error');
         return;
       }
   
-      const employees = listRes.data.filter(e => e.status !== '離職');
+      const employees = listRes.data.filter(e => e.dept !== '離職');
       const total = employees.length;
   
       if (total === 0) {
@@ -2520,7 +2520,7 @@ function rcShowMsg(text, type = 'info') {
   
         try {
           const res = await callApifetch(
-            `recalculateMonthlySalary&yearMonth=${encodeURIComponent(yearMonth)}&employeeId=${encodeURIComponent(emp.employeeId)}`
+            `recalculateMonthlySalary&yearMonth=${encodeURIComponent(yearMonth)}&employeeId=${encodeURIComponent(emp.userId)}`
           );
   
           if (res.ok) {
