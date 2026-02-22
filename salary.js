@@ -2492,12 +2492,12 @@ function rcShowMsg(text, type = 'info') {
       rcShowMsg('取得員工列表中...', 'info');
       const listRes = await callApifetch('getAllUsers');
   
-      if (!listRes.ok || !Array.isArray(listRes.data)) {
+      if (!listRes.ok || !Array.isArray(listRes.users)) {
         rcShowMsg('無法取得員工列表', 'error');
         return;
       }
   
-      const employees = listRes.data.filter(e => e.dept !== '離職');
+      const employees = listRes.users.filter(e => e.status === '啟用');
       const total = employees.length;
   
       if (total === 0) {
@@ -2516,7 +2516,7 @@ function rcShowMsg(text, type = 'info') {
         const emp = employees[i];
         rcSetProgress(i, total);
         document.getElementById('recalc-progress-text').textContent =
-          `計算中：${emp.employeeName || emp.employeeId}（${i + 1}/${total}）`;
+           `計算中：${emp.name || emp.userId}（${i + 1}/${total}）`;
   
         try {
           const res = await callApifetch(
@@ -2525,14 +2525,14 @@ function rcShowMsg(text, type = 'info') {
   
           if (res.ok) {
             const r = Array.isArray(res.data) ? res.data[0] : res.data;
-            rcAddResultRow(emp.employeeName || emp.employeeId, r?.netSalary || 0, true);
+            rcAddResultRow(emp.name || emp.userId, r?.netSalary || 0, true);
             successCount++;
           } else {
-            rcAddResultRow(emp.employeeName || emp.employeeId, 0, false, res.msg);
+            rcAddResultRow(emp.name || emp.userId, 0, false, res.msg);
             failCount++;
           }
         } catch (e) {
-          rcAddResultRow(emp.employeeName || emp.employeeId, 0, false, e.message);
+          rcAddResultRow(emp.name || emp.userId, 0, false, e.message);
           failCount++;
         }
   
