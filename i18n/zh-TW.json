@@ -718,5 +718,6 @@
   "ADJUST_REASON_REQUIRED": "請填寫補打卡理由",
 
 
-  "STATS_OVERTIME_HOURS": "加班時數"
+  "STATS_OVERTIME_HOURS": "加班時數",
+  "STATUS_HOLIDAY": "國定假日"
 }

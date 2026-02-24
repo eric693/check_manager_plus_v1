@@ -601,7 +601,7 @@ function renderAbnormalRecords(records) {
         
         sortedRecords.forEach((record, index) => {
             console.log(`   ${index + 1}. ${record.date} - ${record.reason}`);
-            
+            if (record.reason === 'STATUS_HOLIDAY') return;
             let reasonClass, displayReason, buttonHtml;
             
             // ⭐⭐⭐ 新增翻譯映射函數
@@ -776,7 +776,7 @@ async function checkAbnormal() {
                 
                 sortedRecords.forEach((record, index) => {
                     console.log(`   渲染第 ${index + 1} 筆: ${record.date} - ${record.reason}`);
-                    
+                    if (record.reason === 'STATUS_HOLIDAY') return;
                     let reasonClass, displayReason, buttonHtml;
                     
                     switch(record.reason) {
