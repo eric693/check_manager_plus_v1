@@ -728,5 +728,6 @@
   "ADJUST_REASON_REQUIRED": "Vui lòng nhập lý do điều chỉnh",
 
 
-  "STATS_OVERTIME_HOURS": "Giờ làm thêm"
+  "STATS_OVERTIME_HOURS": "Giờ làm thêm",
+  "STATUS_HOLIDAY": "Ngày lễ"
 }

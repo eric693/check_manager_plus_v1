@@ -681,5 +681,6 @@
   "ADJUST_REASON_PLACEHOLDER": "Harap jelaskan alasan penyesuaian (misalnya: lupa absen, kesalahan sistem, dll.)",
   "ADJUST_REASON_REQUIRED": "Harap isi alasan penyesuaian",
 
-  "STATS_OVERTIME_HOURS": "Jam Lembur"
+  "STATS_OVERTIME_HOURS": "Jam Lembur",
+  "STATUS_HOLIDAY": "Hari Libur"
 }

@@ -681,5 +681,6 @@
   "ADJUST_REASON_PLACEHOLDER": "조정 사유를 입력해 주세요 (예: 체크인 누락, 시스템 오류 등)",
   "ADJUST_REASON_REQUIRED": "조정 사유를 입력해 주세요",
 
-  "STATS_OVERTIME_HOURS": "초과 근무 시간"
+  "STATS_OVERTIME_HOURS": "초과 근무 시간",
+  "STATUS_HOLIDAY": "공휴일"
 }

@@ -730,6 +730,7 @@
     "ADJUST_REASON_PLACEHOLDER": "โปรดระบุเหตุผลในการปรับแก้ (เช่น ลืมบันทึกเวลา, ระบบขัดข้อง เป็นต้น)",
     "ADJUST_REASON_REQUIRED": "กรุณากรอกเหตุผลในการปรับแก้",
 
-    "STATS_OVERTIME_HOURS": "ชั่วโมงทำงานล่วงเวลา"
+    "STATS_OVERTIME_HOURS": "ชั่วโมงทำงานล่วงเวลา",
+    "STATUS_HOLIDAY": "วันหยุดนักขัตฤกษ์"
 }
   
