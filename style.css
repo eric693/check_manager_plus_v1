@@ -616,6 +616,19 @@ html.dark #search-results-list li:hover {
 /* ======================================= */
 /* 請假日樣式 (Leave Day Styles) */
 /* ======================================= */
+/* 亮色模式 - 國定假日 */
+.day-cell.holiday-day {
+    background-color: #fef3c7;
+    color: #d97706;
+    border: 1px solid #fcd34d;
+}
+
+/* 暗黑模式 - 國定假日 */
+html.dark .day-cell.holiday-day {
+    background-color: #78350f;
+    color: #fde68a;
+    border: 1px solid #d97706;
+}
 
 /* 亮色模式 - 請假日 */
 .day-cell.leave-day {

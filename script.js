@@ -1151,6 +1151,9 @@ function renderCalendarWithData(year, month, today, records, calendarGrid, month
                 case "STATUS_REPAIR_APPROVED":
                     dateClass = 'approved-virtual';
                     break;
+                case "STATUS_HOLIDAY":
+                    dateClass = 'holiday-day'; // 新增假日樣式
+                    break;
                 case "STATUS_NO_RECORD":
                     // 如果有加班或請假，則顯示為特殊狀態
                     if (record.overtime || record.leave) {
