@@ -844,6 +844,19 @@ function displayEmployeeSalary(data) {
     safeSet('detail-bank-name', getBankName(bankCode));
     safeSet('detail-bank-account', bankAccount || '--');
 
+    // ⭐ 顯示備註
+    const note = data['備註'] || data.note || '';
+    const noteSectionEl = document.getElementById('salary-note-section');
+    const noteEl = document.getElementById('detail-salary-note');
+
+    if (noteSectionEl && noteEl) {
+        if (note && note.trim() !== '') {
+            noteEl.textContent = note;
+            noteSectionEl.style.display = 'block';
+        } else {
+            noteSectionEl.style.display = 'none';
+        }
+    }
     console.log('✅ 薪資明細顯示完成');
 }
 
