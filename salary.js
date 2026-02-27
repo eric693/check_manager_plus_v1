@@ -1657,6 +1657,310 @@ function createAllSalaryItem(salary) {
     return div;
 }
 
+/**
+ * 建立所有員工薪資項目（含匯出薪資條按鈕）
+ */
+function createAllSalaryItem(salary) {
+    const div = document.createElement('div');
+    div.className = 'feature-box flex justify-between items-center hover:bg-white/10 transition';
+
+    // 用 JSON 安全傳遞資料
+    const dataAttr = encodeURIComponent(JSON.stringify(salary));
+
+    div.innerHTML = `
+        <div>
+            <div class="font-semibold text-lg">
+                ${salary['員工姓名'] || '--'}
+                <span class="text-gray-400 text-sm">(${salary['員工ID'] || '--'})</span>
+            </div>
+            <div class="text-sm text-gray-400 mt-1">
+                ${salary['年月'] || '--'} | ${salary['狀態'] || '--'}
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="text-right">
+                <div class="text-2xl font-bold text-green-400">
+                    ${formatCurrency(salary['實發金額'])}
+                </div>
+                <div class="text-xs text-gray-400 mt-1">
+                    ${getBankName(salary['銀行代碼'])} ${salary['銀行帳號'] || '--'}
+                </div>
+            </div>
+            <button
+                onclick="exportPaySlip(decodeURIComponent(this.dataset.salary))"
+                data-salary="${dataAttr}"
+                style="
+                    padding: 0.5rem 1rem;
+                    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                    border: none;
+                    border-radius: 8px;
+                    color: #fff;
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    white-space: nowrap;
+                    transition: opacity 0.2s;
+                "
+                onmouseover="this.style.opacity='0.8'"
+                onmouseout="this.style.opacity='1'"
+            >
+                🧾 匯出薪資條
+            </button>
+        </div>
+    `;
+
+    return div;
+}
+
+/**
+ * 匯出個別員工薪資條（前端直接產生列印頁面）
+ */
+function exportPaySlip(salaryJson) {
+    let salary;
+    try {
+        salary = JSON.parse(salaryJson);
+    } catch(e) {
+        showNotification('薪資資料解析失敗', 'error');
+        return;
+    }
+
+    const fmt = (v) => {
+        const n = parseFloat(v);
+        return isNaN(n) ? '$0' : '$' + n.toLocaleString('zh-TW');
+    };
+    const fmtZero = (v) => {
+        const n = parseFloat(v) || 0;
+        return n === 0 ? '' : '$' + n.toLocaleString('zh-TW');
+    };
+
+    // 計算扣款總額
+    const totalDeductions =
+        (parseFloat(salary['勞保費'])     || 0) +
+        (parseFloat(salary['健保費'])     || 0) +
+        (parseFloat(salary['就業保險費']) || 0) +
+        (parseFloat(salary['勞退自提'])   || 0) +
+        (parseFloat(salary['所得稅'])     || 0) +
+        (parseFloat(salary['請假扣款'])   || 0) +
+        (parseFloat(salary['福利金扣款']) || 0) +
+        (parseFloat(salary['宿舍費用'])   || 0) +
+        (parseFloat(salary['團保費用'])   || 0) +
+        (parseFloat(salary['其他扣款1']) || 0) +
+        (parseFloat(salary['其他扣款2']) || 0);
+
+    // 薪資條列（只顯示非零項目）
+    const earningsRows = [
+        ['基本薪資',   salary['基本薪資']],
+        ['職務加給',   salary['職務加給']],
+        ['伙食費',     salary['伙食費']],
+        ['交通補助',   salary['交通補助']],
+        ['全勤獎金',   salary['全勤獎金']],
+        ['績效獎金',   salary['績效獎金']],
+        ['其他津貼1',  salary['其他津貼1']],
+        ['其他津貼2',  salary['其他津貼2']],
+        ['其他津貼3',  salary['其他津貼3']],
+        ['平日加班費', salary['平日加班費'] || salary['平日加班費/延長工時(前2h)']],
+        ['休息日加班費', salary['休息日加班費'] || salary['休息日加班費/延長工時(後2h)']],
+        ['國定假日加班費', salary['國定假日加班費']],
+        ['未休假補薪', salary['未休假補薪']],
+        ['月休補薪',   salary['月休補薪']],
+    ].filter(r => parseFloat(r[1]) > 0);
+
+    const deductionRows = [
+        ['勞保費',     salary['勞保費']],
+        ['健保費',     salary['健保費']],
+        ['就業保險費', salary['就業保險費']],
+        ['勞退自提',   salary['勞退自提']],
+        ['所得稅',     salary['所得稅']],
+        ['請假扣款',   salary['請假扣款']],
+        ['福利金扣款', salary['福利金扣款']],
+        ['宿舍費用',   salary['宿舍費用']],
+        ['團保費用',   salary['團保費用']],
+        ['其他扣款1',  salary['其他扣款1']],
+        ['其他扣款2',  salary['其他扣款2']],
+    ].filter(r => parseFloat(r[1]) > 0);
+
+    // 補齊兩側列數相等（讓表格對齊好看）
+    const maxRows = Math.max(earningsRows.length, deductionRows.length);
+    while (earningsRows.length  < maxRows) earningsRows.push(['', '']);
+    while (deductionRows.length < maxRows) deductionRows.push(['', '']);
+
+    const tableRows = earningsRows.map((e, i) => {
+        const d = deductionRows[i];
+        return `
+            <tr>
+                <td class="label">${e[0]}</td>
+                <td class="amount earn">${e[0] ? fmt(e[1]) : ''}</td>
+                <td class="sep"></td>
+                <td class="label">${d[0]}</td>
+                <td class="amount deduct">${d[0] ? fmt(d[1]) : ''}</td>
+            </tr>
+        `;
+    }).join('');
+
+    const bankInfo = salary['銀行代碼']
+        ? `${getBankName(salary['銀行代碼'])}　${salary['銀行帳號'] || '--'}`
+        : '--';
+
+    const note = salary['備註'] ? `
+        <div class="note-box">
+            <strong>備註：</strong>${salary['備註']}
+        </div>` : '';
+
+    const html = `<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>薪資條 - ${salary['員工姓名'] || ''} - ${salary['年月'] || ''}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Noto Sans TC', Arial, sans-serif; font-size: 13px; color: #1e293b; background: #fff; }
+
+  .slip { width: 740px; margin: 30px auto; padding: 28px 32px; border: 2px solid #0f172a; border-radius: 8px; }
+
+  /* 標題區 */
+  .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; }
+  .company { font-size:18px; font-weight:700; color:#0f172a; }
+  .slip-title { font-size:14px; font-weight:600; color:#475569; margin-top:3px; }
+  .month-badge {
+    font-size:22px; font-weight:700; color:#fff;
+    background: #0f172a; padding:6px 18px; border-radius:6px;
+  }
+
+  /* 員工資訊 */
+  .info-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px 20px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:12px 16px; margin-bottom:16px; font-size:12px; }
+  .info-item { display:flex; gap:6px; }
+  .info-key { color:#64748b; white-space:nowrap; }
+  .info-val { font-weight:600; color:#1e293b; }
+
+  /* 明細表格 */
+  table { width:100%; border-collapse:collapse; margin-bottom:14px; }
+  thead th { background:#1e293b; color:#fff; padding:7px 10px; font-size:12px; font-weight:600; text-align:left; }
+  thead th.amount { text-align:right; }
+  tr:nth-child(even) { background:#f8fafc; }
+  td { padding:5px 10px; font-size:12.5px; border-bottom:1px solid #f1f5f9; }
+  td.label { color:#374151; }
+  td.amount { text-align:right; font-family:monospace; font-size:12px; }
+  td.earn   { color:#059669; }
+  td.deduct { color:#dc2626; }
+  td.sep    { width:12px; border-bottom:none; background:#fff; }
+
+  /* 合計區 */
+  .totals { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0; border:2px solid #0f172a; border-radius:6px; overflow:hidden; margin-bottom:14px; }
+  .total-box { padding:12px 16px; text-align:center; }
+  .total-box:not(:last-child) { border-right:2px solid #0f172a; }
+  .total-box .t-label { font-size:11px; color:#64748b; margin-bottom:4px; }
+  .total-box .t-value { font-size:20px; font-weight:700; }
+  .total-box.gross  .t-value { color:#059669; }
+  .total-box.deduct .t-value { color:#dc2626; }
+  .total-box.net    .t-value { color:#7c3aed; }
+  .total-box.net    { background:#faf5ff; }
+
+  /* 銀行 */
+  .bank-row { display:flex; gap:8px; font-size:12px; color:#475569; margin-bottom:10px; }
+  .bank-row strong { color:#1e293b; }
+
+  /* 備註 */
+  .note-box { font-size:12px; color:#92400e; background:#fffbeb; border:1px solid #fde68a; border-radius:5px; padding:8px 12px; margin-bottom:10px; }
+
+  /* 底部 */
+  .footer { display:flex; justify-content:space-between; align-items:center; border-top:1px solid #e2e8f0; padding-top:10px; font-size:11px; color:#94a3b8; }
+  .sign-line { border-bottom:1px solid #94a3b8; width:140px; margin-top:20px; text-align:center; padding-bottom:3px; font-size:11px; color:#94a3b8; }
+
+  @media print {
+    body { background:#fff; }
+    .slip { margin:0; border:none; width:100%; padding:16px; }
+    .no-print { display:none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="slip">
+  <!-- 標題 -->
+  <div class="header">
+    <div>
+      <div class="company">出勤管家</div>
+      <div class="slip-title">員工薪資明細條</div>
+    </div>
+    <div class="month-badge">${salary['年月'] || '--'}</div>
+  </div>
+
+  <!-- 員工資訊 -->
+  <div class="info-grid">
+    <div class="info-item"><span class="info-key">員工姓名</span><span class="info-val">${salary['員工姓名'] || '--'}</span></div>
+    <div class="info-item"><span class="info-key">員工編號</span><span class="info-val">${salary['員工ID'] || '--'}</span></div>
+    <div class="info-item"><span class="info-key">薪資類型</span><span class="info-val">${salary['薪資類型'] || '--'}</span></div>
+    <div class="info-item"><span class="info-key">員工類型</span><span class="info-val">${salary['員工類型'] || '--'}</span></div>
+    <div class="info-item"><span class="info-key">發薪年月</span><span class="info-val">${salary['年月'] || '--'}</span></div>
+    <div class="info-item"><span class="info-key">列印日期</span><span class="info-val">${new Date().toLocaleDateString('zh-TW')}</span></div>
+  </div>
+
+  <!-- 明細表格 -->
+  <table>
+    <thead>
+      <tr>
+        <th colspan="2">應發項目</th>
+        <th class="sep"></th>
+        <th colspan="2">扣款項目</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRows}
+    </tbody>
+  </table>
+
+  <!-- 合計 -->
+  <div class="totals">
+    <div class="total-box gross">
+      <div class="t-label">應發總額</div>
+      <div class="t-value">${fmt(salary['應發總額'])}</div>
+    </div>
+    <div class="total-box deduct">
+      <div class="t-label">扣款總額</div>
+      <div class="t-value">${fmt(totalDeductions)}</div>
+    </div>
+    <div class="total-box net">
+      <div class="t-label">實發金額</div>
+      <div class="t-value">${fmt(salary['實發金額'])}</div>
+    </div>
+  </div>
+
+  <!-- 銀行資訊 -->
+  <div class="bank-row">
+    <strong>轉帳銀行：</strong>${bankInfo}
+  </div>
+
+  ${note}
+
+  <!-- 底部 -->
+  <div class="footer">
+    <div>本薪資條由系統自動產生，如有疑問請聯繫人資部門</div>
+    <div class="sign-line">員工簽收</div>
+  </div>
+</div>
+
+<!-- 列印按鈕（不印出） -->
+<div class="no-print" style="text-align:center; margin: 16px 0 30px;">
+  <button onclick="window.print()" style="padding:10px 32px; background:#1e293b; color:#fff; border:none; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; margin-right:12px;">
+    🖨️ 列印 / 存成 PDF
+  </button>
+  <button onclick="window.close()" style="padding:10px 20px; background:#e2e8f0; color:#374151; border:none; border-radius:8px; font-size:15px; cursor:pointer;">
+    關閉
+  </button>
+</div>
+
+</body>
+</html>`;
+
+    // 開新視窗顯示薪資條
+    const win = window.open('', '_blank', 'width=820,height=900');
+    if (!win) {
+        showNotification('❌ 彈出視窗被封鎖，請允許彈出視窗後再試', 'error');
+        return;
+    }
+    win.document.write(html);
+    win.document.close();
+}
+
 // ==================== 工具函數 ====================
 
 /**
