@@ -955,9 +955,6 @@ function showNoSalaryMessage(month) {
 
 // ==================== 管理員功能 ====================
 
-/**
- * 綁定表單事件
- */
 function bindSalaryEvents() {
     console.log('🔗 綁定薪資表單事件（完整版）');
     
@@ -972,6 +969,11 @@ function bindSalaryEvents() {
         calculateBtn.addEventListener('click', handleSalaryCalculation);
         console.log('✅ 薪資計算按鈕已綁定');
     }
+
+    // ⭐ 新增：員工ID輸入完畢後自動載入備註歷程
+    document.getElementById('config-employee-id')?.addEventListener('blur', async function() {
+        await loadNoteHistory(this.value.trim());
+    });
 }
 
 /**
@@ -2893,7 +2895,63 @@ function rcShowMsg(text, type = 'info') {
   })();
 
 
-
+/**
+ * ✅ 載入並顯示備註歷程
+ */
+async function loadNoteHistory(employeeId) {
+    const section = document.getElementById('note-history-section');
+    const list = document.getElementById('note-history-list');
+    if (!section || !list) return;
+  
+    if (!employeeId) {
+      section.style.display = 'none';
+      return;
+    }
+  
+    try {
+      const res = await callApifetch(`getEmployeeSalaryTW&employeeId=${encodeURIComponent(employeeId)}`);
+      
+      if (!res.ok || !res.data) {
+        section.style.display = 'none';
+        return;
+      }
+  
+      const historyRaw = res.data['備註歷程'] || '[]';
+      let history = [];
+  
+      try {
+        history = JSON.parse(historyRaw);
+      } catch (e) {
+        history = [];
+      }
+  
+      if (history.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+  
+      // 由新到舊排列
+      history.sort((a, b) => new Date(b.time) - new Date(a.time));
+  
+      list.innerHTML = history.map(entry => `
+        <div style="
+          padding: 6px 10px;
+          background: rgba(255,255,255,0.05);
+          border-left: 2px solid rgba(255,255,255,0.15);
+          border-radius: 4px;
+          font-size: 0.75rem;
+        ">
+          <div style="color: #94a3b8; margin-bottom: 2px;">${entry.time}</div>
+          <div style="color: #e2e8f0;">${entry.note}</div>
+        </div>
+      `).join('');
+  
+      section.style.display = 'block';
+  
+    } catch (e) {
+      section.style.display = 'none';
+    }
+}
 
 
 console.log('✅ 員工類型切換功能已載入');
