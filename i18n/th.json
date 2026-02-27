@@ -630,7 +630,7 @@
     "SALARY_SAVING_RECORD": "กำลังบันทึกสลิปเงินเดือน...",
     "SALARY_RECORD_SAVED": "บันทึกสลิปเงินเดือนเรียบร้อยแล้ว",
     "SALARY_SELECT_YEAR_MONTH": "กรุณาเลือกปีและเดือน",
-    "SALARY_HOURLY_MIN_190": "ค่าจ้างรายชั่วโมงต้องไม่ต่ำกว่า 190 หยวน",
+    "SALARY_HOURLY_MIN_190": "ค่าจ้างรายชั่วโมงต้องไม่ต่ำกว่า 196 หยวน",
     "SALARY_INPUT_WORK_HOURS": "กรุณากรอกจำนวนชั่วโมงทำงาน",
     "SALARY_HOURLY_CALC_SUCCESS": "คำนวณค่าจ้างรายชั่วโมงเสร็จสิ้น",
 
@@ -710,7 +710,7 @@
     "HOURLY_CALC_DESC": "คำนวณค่าจ้างตามชั่วโมงทำงานจริง",
     "HOURLY_EMPLOYEE_LABEL": "พนักงาน",
     "HOURLY_RATE_LABEL": "ค่าจ้างรายชั่วโมง",
-    "HINT_MIN_HOURLY_RATE": "ค่าจ้างขั้นต่ำ: 190 หยวน",
+    "HINT_MIN_HOURLY_RATE": "ค่าจ้างขั้นต่ำ: 196 หยวน",
     "WORK_HOURS_LABEL": "ชั่วโมงทำงาน",
     "HINT_WORK_HOURS": "ชั่วโมงทำงานจริงของเดือนนี้",
     "HINT_OVERTIME_HOURS": "ชั่วโมงทำงานล่วงเวลาในวันทำงาน (1.34 เท่า)",

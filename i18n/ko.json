@@ -581,7 +581,7 @@
   "SALARY_SAVING_RECORD": "급여 명세서를 저장 중...",
   "SALARY_RECORD_SAVED": "급여 명세서가 저장되었습니다",
   "SALARY_SELECT_YEAR_MONTH": "조회 연월을 선택하세요",
-  "SALARY_HOURLY_MIN_190": "시급은 190위안 이상이어야 합니다",
+  "SALARY_HOURLY_MIN_190": "시급은 196위안 이상이어야 합니다",
   "SALARY_INPUT_WORK_HOURS": "근무 시간을 입력하세요",
   "SALARY_HOURLY_CALC_SUCCESS": "시급 계산이 완료되었습니다",
 
@@ -661,7 +661,7 @@
   "HOURLY_CALC_DESC": "실제 근무 시간을 기준으로 시급제를 계산합니다",
   "HOURLY_EMPLOYEE_LABEL": "직원",
   "HOURLY_RATE_LABEL": "시급",
-  "HINT_MIN_HOURLY_RATE": "최저 시급: 190위안",
+  "HINT_MIN_HOURLY_RATE": "최저 시급: 196위안",
   "WORK_HOURS_LABEL": "근무 시간",
   "HINT_WORK_HOURS": "해당 월 실제 근무 시간",
   "HINT_OVERTIME_HOURS": "평일 초과 근무 시간 (1.34배)",

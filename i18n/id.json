@@ -581,7 +581,7 @@
   "SALARY_SAVING_RECORD": "Menyimpan slip gaji...",
   "SALARY_RECORD_SAVED": "Slip gaji berhasil disimpan",
   "SALARY_SELECT_YEAR_MONTH": "Silakan pilih tahun dan bulan",
-  "SALARY_HOURLY_MIN_190": "Upah per jam tidak boleh kurang dari 190 Yuan",
+  "SALARY_HOURLY_MIN_190": "Upah per jam tidak boleh kurang dari 196 Yuan",
   "SALARY_INPUT_WORK_HOURS": "Masukkan jumlah jam kerja",
   "SALARY_HOURLY_CALC_SUCCESS": "Perhitungan upah per jam selesai",
 
@@ -661,7 +661,7 @@
   "HOURLY_CALC_DESC": "Menghitung upah berdasarkan jam kerja aktual",
   "HOURLY_EMPLOYEE_LABEL": "Karyawan",
   "HOURLY_RATE_LABEL": "Upah Per Jam",
-  "HINT_MIN_HOURLY_RATE": "Upah minimum: 190 Yuan",
+  "HINT_MIN_HOURLY_RATE": "Upah minimum: 196 Yuan",
   "WORK_HOURS_LABEL": "Jam Kerja",
   "HINT_WORK_HOURS": "Total jam kerja bulan ini",
   "HINT_OVERTIME_HOURS": "Jam lembur hari kerja (1,34x)",

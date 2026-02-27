@@ -627,7 +627,7 @@
   "SALARY_SAVING_RECORD": "Đang lưu bảng lương...",
   "SALARY_RECORD_SAVED": "Đã lưu bảng lương thành công",
   "SALARY_SELECT_YEAR_MONTH": "Vui lòng chọn năm và tháng",
-  "SALARY_HOURLY_MIN_190": "Lương theo giờ không được thấp hơn 190",
+  "SALARY_HOURLY_MIN_190": "Lương theo giờ không được thấp hơn 196",
   "SALARY_INPUT_WORK_HOURS": "Vui lòng nhập số giờ làm việc",
   "SALARY_HOURLY_CALC_SUCCESS": "Tính lương theo giờ hoàn tất",
 
@@ -707,7 +707,7 @@
   "HOURLY_CALC_DESC": "Tính lương dựa trên số giờ làm việc thực tế",
   "HOURLY_EMPLOYEE_LABEL": "Nhân viên",
   "HOURLY_RATE_LABEL": "Lương theo giờ",
-  "HINT_MIN_HOURLY_RATE": "Lương tối thiểu: 190",
+  "HINT_MIN_HOURLY_RATE": "Lương tối thiểu: 196",
   "WORK_HOURS_LABEL": "Số giờ làm việc",
   "HINT_WORK_HOURS": "Tổng số giờ làm việc trong tháng",
   "HINT_OVERTIME_HOURS": "Giờ tăng ca ngày thường (1,34 lần)",

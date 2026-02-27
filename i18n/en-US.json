@@ -598,7 +598,7 @@
   "SALARY_SAVING_RECORD": "Saving salary record...",
   "SALARY_RECORD_SAVED": "Salary record saved successfully",
   "SALARY_SELECT_YEAR_MONTH": "Please select year and month",
-  "SALARY_HOURLY_MIN_190": "Hourly wage must not be less than 190",
+  "SALARY_HOURLY_MIN_190": "Hourly wage must not be less than 196",
   "SALARY_INPUT_WORK_HOURS": "Please enter work hours",
   "SALARY_HOURLY_CALC_SUCCESS": "Hourly calculation completed",
 
@@ -680,7 +680,7 @@
   "HOURLY_CALC_DESC": "Calculate hourly employee wages based on actual working hours",
   "HOURLY_EMPLOYEE_LABEL": "Employee",
   "HOURLY_RATE_LABEL": "Hourly Rate",
-  "HINT_MIN_HOURLY_RATE": "Minimum hourly wage: 190 NTD",
+  "HINT_MIN_HOURLY_RATE": "Minimum hourly wage: 196 NTD",
   "WORK_HOURS_LABEL": "Working Hours",
   "HINT_WORK_HOURS": "Actual working hours this month",
   "HINT_OVERTIME_HOURS": "Weekday overtime hours (×1.34)",

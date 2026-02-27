@@ -581,7 +581,7 @@
   "SALARY_SAVING_RECORD": "給与明細を保存中...",
   "SALARY_RECORD_SAVED": "給与明細を保存しました",
   "SALARY_SELECT_YEAR_MONTH": "対象年月を選択してください",
-  "SALARY_HOURLY_MIN_190": "時給は190元以上である必要があります",
+  "SALARY_HOURLY_MIN_190": "時給は196元以上である必要があります",
   "SALARY_INPUT_WORK_HOURS": "勤務時間を入力してください",
   "SALARY_HOURLY_CALC_SUCCESS": "時給計算が完了しました",
 
@@ -661,7 +661,7 @@
   "HOURLY_CALC_DESC": "実働時間に基づき時給制給与を計算します",
   "HOURLY_EMPLOYEE_LABEL": "従業員",
   "HOURLY_RATE_LABEL": "時給",
-  "HINT_MIN_HOURLY_RATE": "最低時給：190元",
+  "HINT_MIN_HOURLY_RATE": "最低時給：196元",
   "WORK_HOURS_LABEL": "勤務時間",
   "HINT_WORK_HOURS": "当月の実働時間",
   "HINT_OVERTIME_HOURS": "平日残業時間（1.34倍）",
