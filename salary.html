@@ -2345,9 +2345,6 @@
             }
         }
 
-        /**
-         * ⭐ 員工選擇變更事件
-         */
         function onEmployeeSelect() {
             const selectEl = document.getElementById('config-employee-select');
             const employeeIdEl = document.getElementById('config-employee-id');
@@ -2361,14 +2358,15 @@
                 try {
                     const employee = JSON.parse(selectedValue);
                     
-                    // 自動填入員工ID和姓名
                     employeeIdEl.value = employee.userId;
                     employeeNameEl.value = employee.name;
                     
                     console.log(`✅ 選擇員工: ${employee.name} (${employee.userId})`);
                     
-                    // ⭐ 可選：自動載入該員工的現有薪資設定
                     loadExistingSalaryConfig(employee.userId);
+                    
+                    // ⭐ 新增：載入備註歷程
+                    loadNoteHistory(employee.userId);
                     
                 } catch (error) {
                     console.error('解析員工資料失敗:', error);
@@ -2379,6 +2377,10 @@
                 // 清空欄位
                 employeeIdEl.value = '';
                 employeeNameEl.value = '';
+                
+                // ⭐ 新增：清空時隱藏歷程
+                const section = document.getElementById('note-history-section');
+                if (section) section.style.display = 'none';
             }
         }
 
