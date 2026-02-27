@@ -1691,20 +1691,20 @@ function createAllSalaryItem(salary) {
                 data-salary="${dataAttr}"
                 style="
                     padding: 0.5rem 1rem;
-                    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-                    border: none;
+                    background: rgba(255,255,255,0.08);
+                    border: 1px solid rgba(255,255,255,0.2);
                     border-radius: 8px;
                     color: #fff;
                     font-size: 0.8rem;
                     font-weight: 600;
                     cursor: pointer;
                     white-space: nowrap;
-                    transition: opacity 0.2s;
+                    transition: background 0.2s;
                 "
-                onmouseover="this.style.opacity='0.8'"
-                onmouseout="this.style.opacity='1'"
+                onmouseover="this.style.background='rgba(255,255,255,0.15)'"
+                onmouseout="this.style.background='rgba(255,255,255,0.08)'"
             >
-                🧾 匯出薪資條
+                匯出薪資條
             </button>
         </div>
     `;
