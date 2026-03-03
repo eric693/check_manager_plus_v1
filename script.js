@@ -2697,42 +2697,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // 👇 加入公告事件綁定
+    // const submitAnnouncementBtn = document.getElementById('submit-announcement-btn');
+    // if (submitAnnouncementBtn) {
+    //     submitAnnouncementBtn.addEventListener('click', () => {
+    //         const title = document.getElementById('announcement-title').value.trim();
+    //         const content = document.getElementById('announcement-content').value.trim();
+    //         const priority = document.getElementById('announcement-priority').value;
+            
+    //         if (!title || !content) {
+    //             showNotification('請填寫標題和內容', 'error');
+    //             return;
+    //         }
+    //         document.getElementById('submit-announcement-btn')
+    //         ?.addEventListener('click', submitAnnouncement);
+    //         // const submitAnnouncementBtn = document.getElementById('submit-announcement-btn');
+    //         // if (submitAnnouncementBtn) {
+    //         //     submitAnnouncementBtn.addEventListener('click', submitAnnouncement);
+    //         // }
+    //         const newAnnouncement = {
+    //             id: Date.now().toString(),
+    //             title: title,
+    //             content: content,
+    //             priority: priority,
+    //             createdAt: new Date().toISOString()
+    //         };
+            
+    //         announcements.unshift(newAnnouncement);
+    //         saveAnnouncements(announcements);
+            
+    //         document.getElementById('announcement-title').value = '';
+    //         document.getElementById('announcement-content').value = '';
+    //         document.getElementById('announcement-priority').value = 'normal';
+            
+    //         displayAdminAnnouncements();
+    //         displayAnnouncements();
+            
+    //         showNotification('公告發布成功！', 'success');
+    //     });
+    // }
+    // 👇 加入公告事件綁定
     const submitAnnouncementBtn = document.getElementById('submit-announcement-btn');
     if (submitAnnouncementBtn) {
-        submitAnnouncementBtn.addEventListener('click', () => {
-            const title = document.getElementById('announcement-title').value.trim();
-            const content = document.getElementById('announcement-content').value.trim();
-            const priority = document.getElementById('announcement-priority').value;
-            
-            if (!title || !content) {
-                showNotification('請填寫標題和內容', 'error');
-                return;
-            }
-            
-            const submitAnnouncementBtn = document.getElementById('submit-announcement-btn');
-            if (submitAnnouncementBtn) {
-                submitAnnouncementBtn.addEventListener('click', submitAnnouncement);
-            }
-            const newAnnouncement = {
-                id: Date.now().toString(),
-                title: title,
-                content: content,
-                priority: priority,
-                createdAt: new Date().toISOString()
-            };
-            
-            announcements.unshift(newAnnouncement);
-            saveAnnouncements(announcements);
-            
-            document.getElementById('announcement-title').value = '';
-            document.getElementById('announcement-content').value = '';
-            document.getElementById('announcement-priority').value = 'normal';
-            
-            displayAdminAnnouncements();
-            displayAnnouncements();
-            
-            showNotification('公告發布成功！', 'success');
-        });
+        submitAnnouncementBtn.addEventListener('click', submitAnnouncement);
     }
     displayAnnouncements();
 });
