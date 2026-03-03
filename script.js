@@ -2952,86 +2952,140 @@ function clearShiftCache() {
 }
 
 // ==================== 📢 佈告欄功能 ====================
+// ==================== 📢 佈告欄功能 ====================
 
-function  loadAnnouncements() {
-    const data = localStorage.getItem('announcements');
-    return data ? JSON.parse(data) : [];
-}
-
-function saveAnnouncements(announcements) {
-    localStorage.setItem('announcements', JSON.stringify(announcements));
-}
-
-function displayAnnouncements() {
+async function loadAnnouncements() {
+    try {
+      const res = await callApifetch("getAnnouncements");
+      return res.ok ? res.data : [];
+    } catch (e) {
+      console.error("載入公告失敗:", e);
+      return [];
+    }
+  }
+  
+  async function displayAnnouncements() {
     const list = document.getElementById('announcements-list');
     const empty = document.getElementById('announcements-empty');
-    const announcements = loadAnnouncements().slice(0, 3);
-    
     if (!list) return;
-    
+  
+    const announcements = (await loadAnnouncements()).slice(0, 3);
+  
     if (announcements.length === 0) {
-        if (empty) empty.style.display = 'block';
-        list.innerHTML = '';
-        return;
+      if (empty) empty.style.display = 'block';
+      list.innerHTML = '';
+      return;
     }
-    
+  
     if (empty) empty.style.display = 'none';
     list.innerHTML = '';
-    
+  
     announcements.forEach(a => {
-        const icon = a.priority === 'high' ? '🔴' : a.priority === 'medium' ? '🟡' : '🔵';
-        const div = document.createElement('div');
-        div.className = 'bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 mb-3';
-        div.innerHTML = `
-            <div class="flex items-start justify-between mb-2">
-                <h3 class="font-bold text-gray-800 dark:text-white">${icon} ${a.title}</h3>
-                <span class="text-xs text-gray-500">${new Date(a.createdAt).toLocaleDateString()}</span>
-            </div>
-            <p class="text-sm text-gray-600 dark:text-gray-300">${a.content}</p>
-        `;
-        list.appendChild(div);
+      const icon = a.priority === 'high' ? '🔴' : a.priority === 'medium' ? '🟡' : '🔵';
+      const div = document.createElement('div');
+      div.className = 'bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 mb-3';
+      div.innerHTML = `
+        <div class="flex items-start justify-between mb-2">
+          <h3 class="font-bold text-gray-800 dark:text-white">${icon} ${a.title}</h3>
+          <span class="text-xs text-gray-500">${new Date(a.createdAt).toLocaleDateString()}</span>
+        </div>
+        <p class="text-sm text-gray-600 dark:text-gray-300">${a.content}</p>
+      `;
+      list.appendChild(div);
     });
-}
-
-function displayAdminAnnouncements() {
+  }
+  
+  async function displayAdminAnnouncements() {
     const list = document.getElementById('admin-announcements-list');
     if (!list) return;
-    
-    const announcements = loadAnnouncements();
+  
+    list.innerHTML = '<div class="text-center text-gray-400 py-2">載入中...</div>';
+  
+    const announcements = await loadAnnouncements();
     list.innerHTML = '';
-    
+  
+    if (announcements.length === 0) {
+      list.innerHTML = '<div class="text-center text-gray-400 py-2">目前沒有公告</div>';
+      return;
+    }
+  
     announcements.forEach(a => {
-        const div = document.createElement('div');
-        div.className = 'bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700';
-        div.innerHTML = `
-            <div class="flex justify-between items-start">
-                <div class="flex-1">
-                    <h3 class="font-bold text-gray-800 dark:text-white mb-1">${a.title}</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">${a.content}</p>
-                    <span class="text-xs text-gray-500">${new Date(a.createdAt).toLocaleString()}</span>
-                </div>
-                <button class="px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white rounded ml-4" 
-                        data-i18n="BTN_DELETE"
-                        onclick="deleteAnnouncement('${a.id}')">
-                    刪除
-                </button>
-            </div>
-        `;
-        list.appendChild(div);
-        renderTranslations(div);
+      const div = document.createElement('div');
+      div.className = 'bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700';
+      div.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <h3 class="font-bold text-gray-800 dark:text-white mb-1">${a.title}</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">${a.content}</p>
+            <span class="text-xs text-gray-500">${new Date(a.createdAt).toLocaleString()}</span>
+          </div>
+          <button class="px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white rounded ml-4"
+                  data-i18n="BTN_DELETE"
+                  onclick="deleteAnnouncement('${a.id}')">
+            刪除
+          </button>
+        </div>
+      `;
+      list.appendChild(div);
+      renderTranslations(div);
     });
-}
-
-function deleteAnnouncement(id) {
+  }
+  
+  async function deleteAnnouncement(id) {
     if (!confirm(t('DELETE_ANNOUNCEMENT_CONFIRM'))) return;
-    
-    let announcements = loadAnnouncements();
-    announcements = announcements.filter(a => a.id !== id);
-    saveAnnouncements(announcements);
-    displayAdminAnnouncements();
-    displayAnnouncements();
-    showNotification(t('ANNOUNCEMENT_DELETED'), 'success');
-}
+  
+    try {
+      const token = sessionStorage.getItem("sToken") || localStorage.getItem("sToken");
+      const res = await callApifetch(`deleteAnnouncement&id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`);
+      if (res.ok) {
+        showNotification(t('ANNOUNCEMENT_DELETED'), 'success');
+        await displayAdminAnnouncements();
+        await displayAnnouncements();
+      } else {
+        showNotification(res.msg || '刪除失敗', 'error');
+      }
+    } catch (e) {
+      console.error("刪除公告失敗:", e);
+      showNotification('刪除失敗，請稍後再試', 'error');
+    }
+  }
+  
+  async function submitAnnouncement() {
+    const title    = document.getElementById("annTitle")?.value?.trim();
+    const content  = document.getElementById("annContent")?.value?.trim();
+    const priority = document.getElementById("annPriority")?.value || "normal";
+  
+    if (!title || !content) {
+      showNotification('請填寫標題與內容', 'error');
+      return;
+    }
+  
+    const token = sessionStorage.getItem("sToken") || localStorage.getItem("sToken");
+    const submitBtn = document.getElementById("annSubmitBtn");
+    if (submitBtn) submitBtn.disabled = true;
+  
+    try {
+      const res = await callApifetch(`addAnnouncement&title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&priority=${encodeURIComponent(priority)}&token=${encodeURIComponent(token)}`);
+      if (res.ok) {
+        document.getElementById("annTitle").value = "";
+        document.getElementById("annContent").value = "";
+        if (document.getElementById("annPriority")) {
+          document.getElementById("annPriority").value = "normal";
+        }
+        showNotification('公告已發布', 'success');
+        await displayAdminAnnouncements();
+        await displayAnnouncements();
+      } else {
+        showNotification(res.msg || '發布失敗', 'error');
+      }
+    } catch (e) {
+      console.error("新增公告失敗:", e);
+      showNotification('發布失敗，請稍後再試', 'error');
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  }
+
 
 // ==================== 管理員打卡分析功能 ====================
 
