@@ -2955,7 +2955,6 @@ function clearShiftCache() {
 }
 
 // ==================== 📢 佈告欄功能 ====================
-// ==================== 📢 佈告欄功能 ====================
 
 async function loadAnnouncements() {
     try {
@@ -3038,7 +3037,7 @@ async function loadAnnouncements() {
     if (!confirm(t('DELETE_ANNOUNCEMENT_CONFIRM'))) return;
   
     try {
-      const token = sessionStorage.getItem("sToken") || localStorage.getItem("sToken");
+      const token = localStorage.getItem("sessionToken");
       const res = await callApifetch(`deleteAnnouncement&id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`);
       if (res.ok) {
         showNotification(t('ANNOUNCEMENT_DELETED'), 'success');
@@ -3054,27 +3053,25 @@ async function loadAnnouncements() {
   }
   
   async function submitAnnouncement() {
-    const title    = document.getElementById("annTitle")?.value?.trim();
-    const content  = document.getElementById("annContent")?.value?.trim();
-    const priority = document.getElementById("annPriority")?.value || "normal";
+    const title    = document.getElementById("announcement-title")?.value?.trim();
+    const content  = document.getElementById("announcement-content")?.value?.trim();
+    const priority = document.getElementById("announcement-priority")?.value || "normal";
   
     if (!title || !content) {
       showNotification('請填寫標題與內容', 'error');
       return;
     }
   
-    const token = sessionStorage.getItem("sToken") || localStorage.getItem("sToken");
-    const submitBtn = document.getElementById("annSubmitBtn");
+    const token = localStorage.getItem("sessionToken");
+    const submitBtn = document.getElementById("submit-announcement-btn");
     if (submitBtn) submitBtn.disabled = true;
   
     try {
       const res = await callApifetch(`addAnnouncement&title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&priority=${encodeURIComponent(priority)}&token=${encodeURIComponent(token)}`);
       if (res.ok) {
-        document.getElementById("annTitle").value = "";
-        document.getElementById("annContent").value = "";
-        if (document.getElementById("annPriority")) {
-          document.getElementById("annPriority").value = "normal";
-        }
+        document.getElementById("announcement-title").value = "";
+        document.getElementById("announcement-content").value = "";
+        document.getElementById("announcement-priority").value = "normal";
         showNotification('公告已發布', 'success');
         await displayAdminAnnouncements();
         await displayAnnouncements();
