@@ -2709,7 +2709,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             
-            const announcements = loadAnnouncements();
+            const submitAnnouncementBtn = document.getElementById('submit-announcement-btn');
+            if (submitAnnouncementBtn) {
+                submitAnnouncementBtn.addEventListener('click', submitAnnouncement);
+            }
             const newAnnouncement = {
                 id: Date.now().toString(),
                 title: title,
