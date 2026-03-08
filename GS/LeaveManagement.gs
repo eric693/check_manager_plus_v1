@@ -1237,8 +1237,8 @@ function calculateWorkHoursAndDays(start, end) {
     Logger.log(`   結束: ${end.toISOString()}`);
     
     // ⭐ 工作時間設定
-    const WORK_START_HOUR = 8;      // 上班 08:00 (原本是 9)
-    const WORK_END_HOUR = 17;       // 下班 17:00 (原本是 18)
+    const WORK_START_HOUR = 9;      // 上班 08:00 (原本是 9)
+    const WORK_END_HOUR = 18;       // 下班 17:00 (原本是 18)
     const LUNCH_START = 12;         // 午休開始 12:00
     const LUNCH_END = 13;           // 午休結束 13:00
     const DAILY_WORK_HOURS = 8;     // 每日工作時數（已扣午休）

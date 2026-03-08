@@ -94,7 +94,7 @@ async function refreshLeaveData() {
 }
 
 /**
-✅ 完全修正版：計算工作時數（08:00-17:00，扣除 12:00-13:00）
+✅ 完全修正版：計算工作時數（09:00-18:00，扣除 12:00-13:00）
 ⭐ 支持 0.5 小時精度
  */
 function calculateWorkHours(startTime, endTime) {
