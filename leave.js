@@ -572,30 +572,31 @@ function validateLeaveForm() {
 
 async function loadLeaveBalance() {
     const loadingEl = document.getElementById('leave-balance-loading');
-    
-    console.log('🔄 開始載入假期餘額...');
-    
     if (loadingEl) loadingEl.style.display = 'block';
     
     try {
         const res = await callApifetch('getLeaveBalance');
         
-        console.log('📥 後端返回的假期餘額:', res);
+        // 如果後端正在初始化（第一次登入），稍等再試一次
+        if (!res.ok) {
+            console.log('⚠️ 第一次查詢失敗，1秒後重試...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const retryRes = await callApifetch('getLeaveBalance');
+            if (retryRes.ok && retryRes.balance) {
+                renderLeaveBalance(retryRes.balance);
+            }
+            return;
+        }
         
         if (res.ok && res.balance) {
-            console.log('✅ 假期餘額數據:', res.balance);
             renderLeaveBalance(res.balance);
-        } else {
-            console.error('❌ 載入假期餘額失敗:', res);
         }
     } catch (err) {
         console.error('❌ 載入假期餘額錯誤:', err);
     } finally {
         if (loadingEl) loadingEl.style.display = 'none';
-        console.log('✅ 假期餘額載入完成');
     }
 }
-
 
 /**
  * ✅ 修正：渲染假期餘額（直接顯示小時數，不需轉換）
