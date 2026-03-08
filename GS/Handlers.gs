@@ -11,7 +11,13 @@ function handleGetProfile(code) {
     const sToken = writeSession_(profile.userId);
     const employee = writeEmployee_(profile);
     
-    // ⭐⭐⭐ 關鍵：不再在這裡查詢異常記錄
+    // ⭐ 新增：第一次登入時初始化假期餘額（如果已存在則自動跳過）
+    try {
+      initializeEmployeeLeave(sToken);
+    } catch (leaveErr) {
+      Logger.log('⚠️ 初始化假期餘額失敗（不影響登入）: ' + leaveErr.message);
+    }
+    
     return {
       ok: true,
       code: "WELCOME_BACK",
@@ -26,81 +32,12 @@ function handleGetProfile(code) {
         dept: employee[5] || "員工",
         status: "啟用"
       }
-      // ⭐ 移除 abnormalRecords
     };
     
   } catch (error) {
     return { ok: false, code: "ERR_LOGIN_FAILED", msg: error.message };
   }
 }
-// function handleGetProfile(code) {
-//   try {
-//     Logger.log('📋 開始登入流程');
-    
-//     // 步驟 1：兌換 LINE Token
-//     const tokenResp = exchangeCodeForToken_(code);
-    
-//     // 步驟 2：取得 LINE 使用者資料
-//     const profile = getLineUserInfo_(tokenResp);
-    
-//     // 步驟 3：建立 Session
-//     const sToken = writeSession_(profile.userId);
-    
-//     // 步驟 4：寫入/更新員工資料
-//     const employee = writeEmployee_(profile);
-    
-//     // ⭐⭐⭐ 關鍵優化：直接返回完整使用者資料 + 異常記錄
-//     // 這樣前端就不需要再呼叫 initApp，減少一次 API 請求
-    
-//     const now = new Date();
-//     const month = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
-    
-//     // 取得異常記錄
-//     const records = getAttendanceRecords(month, profile.userId);
-//     const abnormalResults = checkAttendanceAbnormal(records);
-    
-//     Logger.log('✅ 登入完成，返回完整資料');
-    
-//     return {
-//       ok: true,
-//       code: "WELCOME_BACK",
-//       params: { name: profile.displayName },
-//       sToken: sToken,
-//       // ⭐ 新增：直接返回使用者資料
-//       user: {
-//         userId: profile.userId,
-//         employeeId: profile.userId,
-//         email: profile.email || "",
-//         name: profile.displayName,
-//         picture: profile.pictureUrl,
-//         dept: employee[5] || "員工",  // 從 writeEmployee_ 返回的 row 取得部門
-//         status: "啟用"
-//       },
-//       // ⭐ 新增：直接返回異常記錄
-//       abnormalRecords: abnormalResults
-//     };
-    
-//   } catch (error) {
-//     Logger.log('❌ 登入失敗: ' + error);
-//     return {
-//       ok: false,
-//       code: "ERR_LOGIN_FAILED",
-//       msg: error.message
-//     };
-//   }
-// }
-// function handleGetProfile(code) {
-//   const tokenResp = exchangeCodeForToken_(code);
-//   const profile   = getLineUserInfo_(tokenResp);
-//   const sToken    = writeSession_(profile.userId);
-//   writeEmployee_(profile);
-//   return {
-//     ok: true,
-//     code: "WELCOME_BACK",
-//     params: { name: profile.displayName },
-//     sToken
-//   };
-// }
 
 function handleGetLoginUrl() {
   const baseUrl = LINE_REDIRECT_URL;
@@ -295,11 +232,36 @@ function testHandleAdjustPunchComplete() {
 function handleGetAbnormalRecords(params) {
   const { month, userId } = params;
   if (!month) return { ok: false, code: "ERR_MISSING_MONTH" };
+  
   const records = getAttendanceRecords(month, userId);
-  const abnormalResults = checkAttendanceAbnormal(records);
+  let abnormalResults = checkAttendanceAbnormal(records);
+  
+  // ⭐ 過濾已核准請假的日期
+  try {
+    const approvedLeaves = getApprovedLeaveRecords(month, userId);
+    const approvedDates = new Set(approvedLeaves.map(r => r.date));
+    
+    if (approvedDates.size > 0) {
+      Logger.log('📅 已核准請假日期: ' + JSON.stringify([...approvedDates]));
+      
+      abnormalResults = abnormalResults.filter(record => {
+        const isMissingPunch = 
+          record.reason === 'STATUS_PUNCH_IN_MISSING' || 
+          record.reason === 'STATUS_PUNCH_OUT_MISSING';
+        
+        if (isMissingPunch && approvedDates.has(record.date)) {
+          Logger.log('⏭️ 跳過已核准請假日: ' + record.date);
+          return false;
+        }
+        return true;
+      });
+    }
+  } catch(e) {
+    Logger.log('⚠️ 過濾請假日期失敗: ' + e);
+  }
+  
   return { ok: true, records: abnormalResults };
 }
-
 
 /**
  * ✅ 處理取得出勤詳細資料（完整修正版 - 含打卡+請假+加班）
@@ -1418,13 +1380,25 @@ function handleGetMySalary(params) {
       Logger.log('   - 有資料: 否');
     }
     
+    // ⭐ 步驟 6：補充讀取薪資設定備註
+    let configNote = '';
+    try {
+      const salaryConfig = getEmployeeSalaryTW(employeeId);
+      if (salaryConfig.success && salaryConfig.data) {
+        configNote = salaryConfig.data['備註'] || '';
+        Logger.log('📝 薪資設定備註: ' + configNote);
+      }
+    } catch (e) {
+      Logger.log('⚠️ 讀取薪資設定備註失敗: ' + e);
+    }
+    
     Logger.log('═══════════════════════════════════════');
     
-    // ⭐ 步驟 6：返回結果（統一格式）
+    // ⭐ 步驟 7：返回結果（統一格式）
     return { 
       ok: result.success,
-      success: result.success, // 向後相容
-      data: result.data, 
+      success: result.success,
+      data: result.data ? Object.assign({}, result.data, { '備註': configNote }) : null,
       msg: result.message || result.msg || (result.success ? '查詢成功' : '查無資料')
     };
     
@@ -2084,6 +2058,30 @@ function handleInitApp(params) {
     const records = getAttendanceRecords(month, userId);
     const abnormalResults = checkAttendanceAbnormal(records);
     
+    // ⭐ 新增：過濾已核准請假的日期
+    try {
+      const approvedLeaves = getApprovedLeaveRecords(month, userId);
+      const approvedDates = new Set(approvedLeaves.map(r => r.date));
+      
+      if (approvedDates.size > 0) {
+        Logger.log('📅 過濾已核准請假日期: ' + JSON.stringify([...approvedDates]));
+        
+        const filtered = abnormalResults.filter(record => {
+          const isMissingPunch = 
+            record.reason === 'STATUS_PUNCH_IN_MISSING' || 
+            record.reason === 'STATUS_PUNCH_OUT_MISSING';
+          return !(isMissingPunch && approvedDates.has(record.date));
+        });
+        
+        // 用過濾後的結果繼續
+        // 注意：因為 abnormalResults 之後還有 overtimeRecords 要 push，
+        // 改為直接操作陣列
+        abnormalResults.length = 0;
+        filtered.forEach(r => abnormalResults.push(r));
+      }
+    } catch(e) {
+      Logger.log('⚠️ 過濾請假: ' + e);
+    }
     // 👇 3. 取得加班記錄（新增）
     const overtimeRecords = getApprovedOvertimeRecords(userId, month);
     
@@ -2247,5 +2245,46 @@ function handleGetEmployeeMonthlyOvertime(params) {
   } catch (error) {
     Logger.log("❌ 取得加班記錄失敗: " + error);
     return { ok: false, message: error.toString() };
+  }
+}
+
+function handleGetAnnouncements() {
+  try {
+    const announcements = getAnnouncements();
+    return { ok: true, data: announcements };
+  } catch (e) {
+    return { ok: false, msg: e.message };
+  }
+}
+
+function handleAddAnnouncement(params) {
+  try {
+    const session = checkSession_(params.token);
+    if (!session.ok || session.user.dept !== '管理員') {
+      return { ok: false, msg: "權限不足" };
+    }
+    if (!params.title || !params.content) {
+      return { ok: false, msg: "標題與內容為必填" };
+    }
+    const result = addAnnouncement(params.title, params.content, params.priority, session.user.name);
+    return { ok: result.success, id: result.id, msg: result.success ? "發布成功" : "發布失敗" };
+  } catch (e) {
+    return { ok: false, msg: e.message };
+  }
+}
+
+function handleDeleteAnnouncement(params) {
+  try {
+    const session = checkSession_(params.token);
+    if (!session.ok || session.user.dept !== '管理員') {
+      return { ok: false, msg: "權限不足" };
+    }
+    if (!params.id) {
+      return { ok: false, msg: "缺少公告 ID" };
+    }
+    const result = deleteAnnouncement(params.id);
+    return { ok: result.success, msg: result.success ? "刪除成功" : result.message };
+  } catch (e) {
+    return { ok: false, msg: e.message };
   }
 }
