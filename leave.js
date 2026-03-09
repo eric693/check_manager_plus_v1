@@ -358,17 +358,15 @@ function quickSelectTimeRange(type) {
     switch(type) {
         case '0.5h':
             startTime = `${today}T${STANDARD_WORK_HOURS.START_TIME}`;
-            endTime = `${today}T09:30`;  // ✅ 09:00 + 0.5h
+            endTime = `${today}T08:30`;
             break;
-            
         case '1h':
             startTime = `${today}T${STANDARD_WORK_HOURS.START_TIME}`;
-            endTime = `${today}T10:00`;  // ✅ 09:00 + 1h
+            endTime = `${today}T09:00`;
             break;
-            
         case '2h':
             startTime = `${today}T${STANDARD_WORK_HOURS.START_TIME}`;
-            endTime = `${today}T11:00`;  // ✅ 09:00 + 2h
+            endTime = `${today}T10:00`;
             break;
             
         case '4h':

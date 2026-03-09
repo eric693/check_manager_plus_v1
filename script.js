@@ -11,12 +11,12 @@ let weekShiftCache = null;  // 快取本週排班
 
 // ⭐⭐⭐ 全域工作時間設定
 const STANDARD_WORK_HOURS = {
-    START_TIME: '09:00',
-    END_TIME: '18:00',
-    START_TIME_FULL: '09:00:00',
-    END_TIME_FULL: '18:00:00',
-    WORK_START_HOUR: 9,
-    WORK_END_HOUR: 18,
+    START_TIME: '08:00',
+    END_TIME: '17:00',
+    START_TIME_FULL: '08:00:00',
+    END_TIME_FULL: '17:00:00',
+    WORK_START_HOUR: 8,
+    WORK_END_HOUR: 17,
     LUNCH_START: 12,
     LUNCH_END: 13,
     DAILY_WORK_HOURS: 8
@@ -2445,7 +2445,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             adjustmentFormContainer.innerHTML = formHtml;
             
             const adjustDateTimeInput = document.getElementById("adjustDateTime");
-            const defaultTime = type === '上班' ? '09:00' : '18:00';
+            const defaultTime = type === '上班' ? '08:00' : '17:00';
             adjustDateTimeInput.value = `${date}T${defaultTime}`;
             
             // 👇 新增：平滑滾動到補打卡表單
