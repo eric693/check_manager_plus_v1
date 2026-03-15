@@ -2386,7 +2386,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     punchOutBtn.addEventListener('click', () => doPunch("下班"));
 
     // 處理補打卡表單
-    abnormalList.addEventListener('click', (e) => {
+    abnormalList.addEventListener('click', async (e) => {
         const button = e.target.closest('.adjust-btn');
         
         if (button) {
@@ -2445,9 +2445,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             adjustmentFormContainer.innerHTML = formHtml;
             
             const adjustDateTimeInput = document.getElementById("adjustDateTime");
-            const defaultTime = type === '上班' ? '08:00' : '17:00';
-            adjustDateTimeInput.value = `${date}T${defaultTime}`;
-            
+
+            // 先設預設值，避免 API 失敗時沒有值
+            adjustDateTimeInput.value = `${date}T${type === '上班' ? '08:00' : '17:00'}`;
+
+            // 從排班系統讀取該員工當天的班別
+            try {
+                const userId = localStorage.getItem('sessionUserId');
+                const shiftRes = await callApifetch(
+                    `getEmployeeShiftForDate&employeeId=${userId}&date=${date}`
+                );
+                
+                if (shiftRes.ok && shiftRes.hasShift) {
+                    const defaultTime = type === '上班' 
+                        ? shiftRes.data.startTime   // 例如 09:30
+                        : shiftRes.data.endTime;    // 例如 18:30
+                    adjustDateTimeInput.value = `${date}T${defaultTime}`;
+                }
+            } catch (e) {
+                // 讀不到排班就維持預設值，不影響功能
+                console.warn('無法讀取排班，使用預設時間', e);
+            }
             // 👇 新增：平滑滾動到補打卡表單
             setTimeout(() => {
                 adjustmentFormContainer.scrollIntoView({ 
