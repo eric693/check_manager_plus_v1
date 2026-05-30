@@ -325,6 +325,7 @@ async function loadOvertimeRecordsCard(yearMonth, salaryData) {
         overtimeCard.className = 'feature-box bg-orange-900/20 border-orange-700 mt-4';
         
         const detailsSection = document.getElementById('attendance-details-section');
+        if (!detailsSection) return;
         detailsSection.appendChild(overtimeCard);
     }
     

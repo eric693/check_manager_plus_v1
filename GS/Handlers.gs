@@ -1178,71 +1178,7 @@ function testDiagnoseSalaryParams() {
     Logger.log('❌ Handler 執行失敗');
     Logger.log('   錯誤訊息: ' + result.msg);
   }
-  
-  Logger.log('═══════════════════════════════════════');
-}
 
-/**
- * 🔍 檢查 salaryData 物件是否正確組裝
- */
-function testCheckSalaryDataObject() {
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('🔍 檢查 salaryData 物件組裝');
-  Logger.log('═══════════════════════════════════════');
-  Logger.log('');
-  
-  const params = {
-    employeeId: 'TEST123',
-    employeeName: '測試員工',
-    baseSalary: '60000',
-    positionAllowance: '10',
-    mealAllowance: '10',
-    otherAllowances: '47',
-    dormitoryFee: '67',
-    otherDeductions: '90'
-  };
-  
-  const safeString = (value) => {
-    if (value === null || value === undefined) return '';
-    return String(value).trim();
-  };
-  
-  const safeNumber = (value) => {
-    if (value === null || value === undefined) return 0;
-    const num = parseFloat(value);
-    return isNaN(num) ? 0 : num;
-  };
-  
-  const salaryData = {
-    employeeId: safeString(params.employeeId),
-    employeeName: safeString(params.employeeName),
-    baseSalary: safeNumber(params.baseSalary),
-    positionAllowance: safeNumber(params.positionAllowance),
-    mealAllowance: safeNumber(params.mealAllowance),
-    otherAllowances: safeNumber(params.otherAllowances),
-    dormitoryFee: safeNumber(params.dormitoryFee),
-    otherDeductions: safeNumber(params.otherDeductions)
-  };
-  
-  Logger.log('📊 salaryData 物件內容:');
-  Logger.log('   employeeId: ' + salaryData.employeeId);
-  Logger.log('   employeeName: ' + salaryData.employeeName);
-  Logger.log('   baseSalary: ' + salaryData.baseSalary + ' (型別: ' + typeof salaryData.baseSalary + ')');
-  Logger.log('   positionAllowance: ' + salaryData.positionAllowance + ' ⭐ (型別: ' + typeof salaryData.positionAllowance + ')');
-  Logger.log('   mealAllowance: ' + salaryData.mealAllowance + ' ⭐ (型別: ' + typeof salaryData.mealAllowance + ')');
-  Logger.log('   otherAllowances: ' + salaryData.otherAllowances + ' ⭐ (型別: ' + typeof salaryData.otherAllowances + ')');
-  Logger.log('   dormitoryFee: ' + salaryData.dormitoryFee + ' ⭐ (型別: ' + typeof salaryData.dormitoryFee + ')');
-  Logger.log('   otherDeductions: ' + salaryData.otherDeductions + ' ⭐ (型別: ' + typeof salaryData.otherDeductions + ')');
-  Logger.log('');
-  
-  if (salaryData.positionAllowance === 10 && 
-      salaryData.mealAllowance === 10 && 
-      salaryData.otherAllowances === 47) {
-    Logger.log('✅✅✅ salaryData 物件組裝正確！');
-  } else {
-    Logger.log('❌ salaryData 物件組裝有問題');
-  }
-  
   Logger.log('═══════════════════════════════════════');
 }
 
@@ -1615,57 +1551,57 @@ function handleSaveMonthlySalary(params) {
         yearMonth: params.yearMonth,
         salaryType: params.salaryType || '月薪',
         workTimeType: params.workTimeType || '標準工時',
-        baseSalary: params.baseSalary,
-        
+        baseSalary: parseFloat(params.baseSalary) || 0,
+
         // 固定津貼
-        positionAllowance: params.positionAllowance,
-        mealAllowance: params.mealAllowance,
-        transportAllowance: params.transportAllowance,
-        attendanceBonus: params.attendanceBonus,
-        performanceBonus: params.performanceBonus,
-        otherAllowance1: params.otherAllowance1,
-        otherAllowance2: params.otherAllowance2,
-        otherAllowance3: params.otherAllowance3,
-        
+        positionAllowance: parseFloat(params.positionAllowance) || 0,
+        mealAllowance: parseFloat(params.mealAllowance) || 0,
+        transportAllowance: parseFloat(params.transportAllowance) || 0,
+        attendanceBonus: parseFloat(params.attendanceBonus) || 0,
+        performanceBonus: parseFloat(params.performanceBonus) || 0,
+        otherAllowance1: parseFloat(params.otherAllowance1) || 0,
+        otherAllowance2: parseFloat(params.otherAllowance2) || 0,
+        otherAllowance3: parseFloat(params.otherAllowance3) || 0,
+
         // 加班費
-        weekdayOvertimePay: params.weekdayOvertimePay,
-        restdayOvertimePay: params.restdayOvertimePay,
-        holidayOvertimePay: params.holidayOvertimePay,
-        totalOvertimeHours: params.totalOvertimeHours,
-        
-        // ⭐⭐⭐ 補薪項目（修正）
-        unusedLeavePay: params.unusedLeavePay || 0,
-        unusedLeaveDays: params.unusedLeaveDays || 0,
-        monthlyRestPay: params.monthlyRestPay || 0,
-        monthlyRestMissedDays: params.missedRestDays || params.monthlyRestMissedDays || 0,  // ⭐ 兼容兩種命名
-        
+        weekdayOvertimePay: parseFloat(params.weekdayOvertimePay) || 0,
+        restdayOvertimePay: parseFloat(params.restdayOvertimePay) || 0,
+        holidayOvertimePay: parseFloat(params.holidayOvertimePay) || 0,
+        totalOvertimeHours: parseFloat(params.totalOvertimeHours) || 0,
+
+        // 補薪項目
+        unusedLeavePay: parseFloat(params.unusedLeavePay) || 0,
+        unusedLeaveDays: parseFloat(params.unusedLeaveDays) || 0,
+        monthlyRestPay: parseFloat(params.monthlyRestPay) || 0,
+        monthlyRestMissedDays: parseFloat(params.missedRestDays || params.monthlyRestMissedDays) || 0,
+
         // 法定扣款
-        laborFee: params.laborFee,
-        healthFee: params.healthFee,
-        employmentFee: params.employmentFee,
-        pensionSelf: params.pensionSelf,
-        pensionSelfRate: params.pensionSelfRate,
-        incomeTax: params.incomeTax,
-        
+        laborFee: parseFloat(params.laborFee) || 0,
+        healthFee: parseFloat(params.healthFee) || 0,
+        employmentFee: parseFloat(params.employmentFee) || 0,
+        pensionSelf: parseFloat(params.pensionSelf) || 0,
+        pensionSelfRate: parseFloat(params.pensionSelfRate) || 0,
+        incomeTax: parseFloat(params.incomeTax) || 0,
+
         // 請假扣款（總額）
-        leaveDeduction: params.leaveDeduction,
-        
-        // ⭐⭐⭐ 請假明細（修正）
-        sickLeaveHours: params.sickLeaveHours || 0,
-        sickLeaveDeduction: params.sickLeaveDeduction || 0,
-        personalLeaveHours: params.personalLeaveHours || 0,
-        personalLeaveDeduction: params.personalLeaveDeduction || 0,
-        
+        leaveDeduction: parseFloat(params.leaveDeduction) || 0,
+
+        // 請假明細
+        sickLeaveHours: parseFloat(params.sickLeaveHours) || 0,
+        sickLeaveDeduction: parseFloat(params.sickLeaveDeduction) || 0,
+        personalLeaveHours: parseFloat(params.personalLeaveHours) || 0,
+        personalLeaveDeduction: parseFloat(params.personalLeaveDeduction) || 0,
+
         // 其他扣款
-        welfareFee: params.welfareFee,
-        dormitoryFee: params.dormitoryFee,
-        groupInsurance: params.groupInsurance,
-        otherDeduction1: params.otherDeduction1,
-        otherDeduction2: params.otherDeduction2,
-        
+        welfareFee: parseFloat(params.welfareFee) || 0,
+        dormitoryFee: parseFloat(params.dormitoryFee) || 0,
+        groupInsurance: parseFloat(params.groupInsurance) || 0,
+        otherDeduction1: parseFloat(params.otherDeduction1) || 0,
+        otherDeduction2: parseFloat(params.otherDeduction2) || 0,
+
         // 總額
-        grossSalary: params.grossSalary,
-        netSalary: params.netSalary,
+        grossSalary: parseFloat(params.grossSalary) || 0,
+        netSalary: parseFloat(params.netSalary) || 0,
         
         // 銀行資訊
         bankCode: params.bankCode,
