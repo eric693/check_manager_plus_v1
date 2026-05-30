@@ -11,15 +11,13 @@
 function submitLeaveRequest(sessionToken, leaveType, startDateTime, endDateTime, reason) {
   try {
     Logger.log('═══════════════════════════════════════');
-    Logger.log('📋 開始處理請假申請（小時制）');
+    Logger.log('📋 開始處理請假申請（0.5小時制）');
     Logger.log('═══════════════════════════════════════');
     
-    // ⭐ 步驟 1：驗證 Session
-    Logger.log('📡 驗證 Session...');
+    // 驗證 Session
     const employee = checkSession_(sessionToken);
     
     if (!employee.ok || !employee.user) {
-      Logger.log('❌ Session 驗證失敗');
       return { 
         ok: false, 
         code: "ERR_SESSION_INVALID",
@@ -28,34 +26,17 @@ function submitLeaveRequest(sessionToken, leaveType, startDateTime, endDateTime,
     }
     
     const user = employee.user;
-    Logger.log('✅ Session 驗證成功');
     Logger.log(`   員工ID: ${user.userId}`);
     Logger.log(`   員工姓名: ${user.name}`);
-    Logger.log('');
     
-    // ⭐ 步驟 2：記錄收到的參數
-    Logger.log('📥 收到的參數:');
-    Logger.log(`   leaveType: ${leaveType}`);
-    Logger.log(`   startDateTime: ${startDateTime}`);
-    Logger.log(`   endDateTime: ${endDateTime}`);
-    Logger.log(`   reason: ${reason}`);
-    Logger.log('');
-    
-    // ⭐⭐⭐ 步驟 3：正確解析日期時間（關鍵修正）
-    Logger.log('🔄 解析日期時間...');
-    
+    // 解析日期時間
     let start, end;
     
     try {
-      // 前端傳來的是 ISO 8601 格式字串：例如 "2025-12-18T09:00"
       start = new Date(startDateTime);
       end = new Date(endDateTime);
       
-      // 驗證日期是否有效
       if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-        Logger.log('❌ 日期時間格式無效');
-        Logger.log(`   startDateTime: ${startDateTime} → ${start}`);
-        Logger.log(`   endDateTime: ${endDateTime} → ${end}`);
         return {
           ok: false,
           code: "ERR_INVALID_DATETIME",
@@ -63,12 +44,7 @@ function submitLeaveRequest(sessionToken, leaveType, startDateTime, endDateTime,
         };
       }
       
-      Logger.log('✅ 日期時間解析成功');
-      Logger.log(`   開始: ${start.toISOString()}`);
-      Logger.log(`   結束: ${end.toISOString()}`);
-      
     } catch (parseError) {
-      Logger.log('❌ 日期時間解析失敗: ' + parseError.message);
       return {
         ok: false,
         code: "ERR_DATETIME_PARSE",
@@ -76,11 +52,8 @@ function submitLeaveRequest(sessionToken, leaveType, startDateTime, endDateTime,
       };
     }
     
-    Logger.log('');
-
-    // ⭐ 步驟 4：驗證時間順序
+    // 驗證時間順序
     if (end <= start) {
-      Logger.log('❌ 結束時間必須晚於開始時間');
       return {
         ok: false,
         code: "ERR_INVALID_TIME_RANGE",
@@ -88,52 +61,51 @@ function submitLeaveRequest(sessionToken, leaveType, startDateTime, endDateTime,
       };
     }
 
-    // ⭐⭐⭐ 步驟 4.5：檢查是否為整點時間（新增）
-    Logger.log('🔍 檢查是否為整點時間...');
+    // ⭐ 修改：檢查是否為 30 分鐘的倍數
+    Logger.log('🔍 檢查時間格式（30 分鐘倍數）...');
 
     const startMinutes = start.getMinutes();
     const startSeconds = start.getSeconds();
     const endMinutes = end.getMinutes();
     const endSeconds = end.getSeconds();
 
-    if (startMinutes !== 0 || startSeconds !== 0) {
-      Logger.log(`❌ 開始時間不是整點: ${start.toISOString()}`);
-      Logger.log(`   分鐘: ${startMinutes}, 秒: ${startSeconds}`);
-      return {
-        ok: false,
-        code: "ERR_INVALID_TIME_FORMAT",
-        msg: "開始時間必須是整點（例如：09:00, 10:00）"
-      };
+    if (startMinutes % 30 !== 0 || startSeconds !== 0) {
+      return { msg: "開始時間必須是 30 分鐘的倍數（例如：08:00, 08:30, 09:00）" };
+    }
+    if (endMinutes % 30 !== 0 || endSeconds !== 0) {
+      return { msg: "結束時間必須是 30 分鐘的倍數（例如：08:00, 08:30, 09:00）" };
     }
 
-    if (endMinutes !== 0 || endSeconds !== 0) {
-      Logger.log(`❌ 結束時間不是整點: ${end.toISOString()}`);
-      Logger.log(`   分鐘: ${endMinutes}, 秒: ${endSeconds}`);
-      return {
-        ok: false,
-        code: "ERR_INVALID_TIME_FORMAT",
-        msg: "結束時間必須是整點（例如：09:00, 10:00）"
-      };
-    }
+    Logger.log('✅ 時間格式檢查通過（30 分鐘倍數）');
 
-    Logger.log('✅ 時間格式檢查通過（整點）');
-    Logger.log('');
-
-    // ⭐ 步驟 5：計算工作時數和天數
-    Logger.log('💡 計算工作時數和天數...');
-    
+    // 計算工作時數和天數
     const { workHours, days } = calculateWorkHoursAndDays(start, end);
     
     Logger.log(`   工作時數: ${workHours} 小時`);
     Logger.log(`   天數: ${days} 天`);
-    Logger.log('');
     
-    // ⭐ 步驟 6：檢查假期餘額
-    Logger.log('🔍 檢查假期餘額...');
+    // ⭐ 新增：檢查是否小於最小值
+    if (workHours < 0.5) {
+      return {
+        ok: false,
+        code: "ERR_HOURS_TOO_LOW",
+        msg: "請假時數最少為 0.5 小時"
+      };
+    }
+    
+    // ⭐ 新增：檢查是否為 0.5 的倍數
+    if ((workHours * 2) % 1 !== 0) {
+      return {
+        ok: false,
+        code: "ERR_INVALID_HOURS",
+        msg: `請假時數必須是 0.5 小時的倍數（目前為 ${workHours}）`
+      };
+    }
+    
+    // 檢查假期餘額
     const balance = getLeaveBalance(sessionToken);
     
     if (!balance.ok) {
-      Logger.log('❌ 無法取得假期餘額');
       return {
         ok: false,
         code: "ERR_BALANCE_CHECK",
@@ -141,12 +113,7 @@ function submitLeaveRequest(sessionToken, leaveType, startDateTime, endDateTime,
       };
     }
     
-    Logger.log('✅ 假期餘額檢查完成');
-    Logger.log('');
-    
-    // ⭐⭐⭐ 步驟 7：格式化日期時間為 Sheet 可讀格式（關鍵修正）
-    Logger.log('📝 格式化日期時間...');
-    
+    // 格式化日期時間
     const formattedStartDateTime = Utilities.formatDate(
       start,
       Session.getScriptTimeZone(),
@@ -159,16 +126,10 @@ function submitLeaveRequest(sessionToken, leaveType, startDateTime, endDateTime,
       'yyyy-MM-dd HH:mm:ss'
     );
     
-    Logger.log(`   開始時間（格式化）: ${formattedStartDateTime}`);
-    Logger.log(`   結束時間（格式化）: ${formattedEndDateTime}`);
-    Logger.log('');
-    
-    // ⭐ 步驟 8：取得或建立工作表
-    Logger.log('📊 取得工作表...');
+    // 取得工作表
     const sheet = getLeaveRecordsSheet();
     
     if (!sheet) {
-      Logger.log('❌ 無法取得請假記錄工作表');
       return {
         ok: false,
         code: "ERR_SHEET_ACCESS",
@@ -176,48 +137,28 @@ function submitLeaveRequest(sessionToken, leaveType, startDateTime, endDateTime,
       };
     }
     
-    Logger.log('✅ 工作表已就緒');
-    Logger.log('');
-    
-    // ⭐⭐⭐ 步驟 9：寫入資料（確保所有欄位都有值）
-    Logger.log('💾 準備寫入資料...');
-    
+    // 寫入資料
     const row = [
-      new Date(),                  // A: 申請時間（使用 Date 物件）
+      new Date(),                  // A: 申請時間
       user.userId || '',           // B: 員工ID
       user.name || '',             // C: 姓名
       user.dept || '',             // D: 部門
       leaveType || '',             // E: 假別
-      formattedStartDateTime,      // F: 開始時間（格式化字串）⭐
-      formattedEndDateTime,        // G: 結束時間（格式化字串）⭐
-      workHours,                   // H: 工作時數（數字）
-      days,                        // I: 天數（數字）
-      reason || '',                // J: 原因 ⭐
+      formattedStartDateTime,      // F: 開始時間
+      formattedEndDateTime,        // G: 結束時間
+      workHours,                   // H: 工作時數
+      days,                        // I: 天數
+      reason || '',                // J: 原因
       'PENDING',                   // K: 狀態
       '',                          // L: 審核人
       '',                          // M: 審核時間
       ''                           // N: 審核意見
     ];
     
-    Logger.log('📋 準備寫入的資料:');
-    Logger.log(`   A (申請時間): ${row[0]}`);
-    Logger.log(`   B (員工ID): ${row[1]}`);
-    Logger.log(`   C (姓名): ${row[2]}`);
-    Logger.log(`   D (部門): ${row[3]}`);
-    Logger.log(`   E (假別): ${row[4]}`);
-    Logger.log(`   F (開始時間): ${row[5]} ⭐`);
-    Logger.log(`   G (結束時間): ${row[6]} ⭐`);
-    Logger.log(`   H (工作時數): ${row[7]}`);
-    Logger.log(`   I (天數): ${row[8]}`);
-    Logger.log(`   J (原因): ${row[9]} ⭐`);
-    Logger.log(`   K (狀態): ${row[10]}`);
-    Logger.log('');
-    
     try {
       sheet.appendRow(row);
       Logger.log('✅ 資料寫入成功');
     } catch (writeError) {
-      Logger.log('❌ 資料寫入失敗: ' + writeError.message);
       return {
         ok: false,
         code: "ERR_WRITE_FAILED",
@@ -225,10 +166,7 @@ function submitLeaveRequest(sessionToken, leaveType, startDateTime, endDateTime,
       };
     }
     
-    Logger.log('');
-    Logger.log('═══════════════════════════════════════');
     Logger.log('✅✅✅ 請假申請提交成功');
-    Logger.log('═══════════════════════════════════════');
     
     return {
       ok: true,
@@ -245,11 +183,8 @@ function submitLeaveRequest(sessionToken, leaveType, startDateTime, endDateTime,
     };
     
   } catch (error) {
-    Logger.log('');
     Logger.log('❌❌❌ submitLeaveRequest 發生錯誤');
     Logger.log('錯誤訊息: ' + error.message);
-    Logger.log('錯誤堆疊: ' + error.stack);
-    Logger.log('═══════════════════════════════════════');
     
     return {
       ok: false,
@@ -551,150 +486,235 @@ function testGetLeaveBalance() {
 }
 
 /**
- * ✅ 修正：初始化假期餘額（記錄到職日並計算特休）
+ * ✅ 初始化或更新員工特休（考量即時年資與到期）
+ * 
+ * 使用場景：
+ * 1. 新員工首次登入 → 計算目前應得特休
+ * 2. 每年週年日自動觸發 → 重置為新週期特休
+ * 
+ * @param {string} sessionToken
  */
 function initializeEmployeeLeave(sessionToken) {
   try {
     const employee = checkSession_(sessionToken);
-    
+
     if (!employee.ok || !employee.user) {
-      return {
-        ok: false,
-        code: "ERR_SESSION_INVALID"
-      };
+      return { ok: false, code: "ERR_SESSION_INVALID" };
     }
-    
+
     const user = employee.user;
     const sheet = getLeaveBalanceSheet();
-    
-    // 檢查是否已存在
     const values = sheet.getDataRange().getValues();
+
+    // 檢查是否已存在
     for (let i = 1; i < values.length; i++) {
       if (values[i][0] === user.userId) {
-        Logger.log('ℹ️ 員工 ' + user.name + ' 的假期餘額已存在');
-        return {
-          ok: true,
-          msg: "假期餘額已存在"
-        };
+        Logger.log(`ℹ️ 員工 ${user.name} 的假期餘額已存在，跳過初始化`);
+        return { ok: true, msg: "假期餘額已存在" };
       }
     }
-    
-    // ⭐⭐⭐ 新增：第一次登入，記錄當天為到職日
+
+    // ⭐ 新員工：記錄到職日為今天，並計算即時特休
     const hireDate = new Date();
-    
+    const leaveInfo = getCurrentAnnualLeaveInfo(hireDate);
+    const annualLeaveHours = leaveInfo.currentHours;
+
     Logger.log('═══════════════════════════════════════');
     Logger.log('🎉 新員工首次登入');
     Logger.log(`   員工ID: ${user.userId}`);
     Logger.log(`   姓名: ${user.name}`);
     Logger.log(`   到職日: ${formatDate(hireDate)}`);
-    
-    // ⭐⭐⭐ 計算年資和特休
-    const yearsOfService = calculateYearsOfService(hireDate);
-    const annualLeaveHours = calculateAnnualLeave(yearsOfService);
-    const annualLeaveDays = annualLeaveHours / 8;
-    
-    Logger.log(`   年資: ${yearsOfService.toFixed(2)} 年`);
-    Logger.log(`   特休: ${annualLeaveHours} 小時 (${annualLeaveDays} 天)`);
+    Logger.log(`   初始特休: ${annualLeaveHours} 小時 (${annualLeaveHours / 8} 天)`);
     Logger.log('═══════════════════════════════════════');
-    
-    // ⭐ 修改：新的欄位順序（19個欄位）
+
     const defaultBalance = [
       user.userId,         // A: 員工ID
       user.name,           // B: 姓名
-      hireDate,            // C: 到職日 ⭐ 新增
-      annualLeaveHours,    // D: 特休假（根據年資計算）⭐
-      240,                 // E: 未住院病假（30天 × 8）
-      112,                 // F: 事假（14天 × 8）
-      40,                  // G: 喪假（5天 × 8）
-      64,                  // H: 婚假（8天 × 8）
-      448,                 // I: 產假（56天 × 8）
-      56,                  // J: 陪產檢及陪產假（7天 × 8）
-      240,                 // K: 住院病假（30天 × 8）
-      96,                  // L: 生理假（12天 × 8）
-      56,                  // M: 家庭照顧假（7天 × 8）
-      0,                   // N: 公假（無上限）
-      0,                   // O: 公傷假（無上限）
-      0,                   // P: 天然災害停班（無上限）
-      0,                   // Q: 加班補休假（初始0）
-      0,                   // R: 曠工（初始0）
+      hireDate,            // C: 到職日
+      annualLeaveHours,    // D: 特休假（即時計算）
+      240,                 // E: 未住院病假（30天）
+      112,                 // F: 事假（14天）
+      40,                  // G: 喪假（5天）
+      64,                  // H: 婚假（8天）
+      448,                 // I: 產假（56天）
+      56,                  // J: 陪產假（7天）
+      240,                 // K: 住院病假（30天）
+      96,                  // L: 生理假（12天）
+      56,                  // M: 家庭照顧假（7天）
+      0,                   // N: 公假
+      0,                   // O: 公傷假
+      0,                   // P: 天然災害停班
+      0,                   // Q: 加班補休假
+      0,                   // R: 曠工
       new Date()           // S: 更新時間
     ];
-    
+
     sheet.appendRow(defaultBalance);
-    
-    Logger.log('✅ 已為員工 ' + user.name + ' 初始化假期餘額');
-    
+
+    Logger.log('✅ 已初始化假期餘額');
+
     return {
       ok: true,
       msg: "假期餘額已初始化",
       hireDate: formatDate(hireDate),
-      annualLeave: annualLeaveDays
+      annualLeaveHours: annualLeaveHours
     };
-    
+
   } catch (error) {
     Logger.log('❌ initializeEmployeeLeave 錯誤: ' + error);
-    return {
-      ok: false,
-      msg: error.message
-    };
+    return { ok: false, msg: error.message };
   }
 }
 
-/**
- * ⭐ 新增：計算年資（從到職日到今天）
- */
 function calculateYearsOfService(hireDate, baseDate) {
   if (!hireDate) return 0;
   
   const hire = new Date(hireDate);
-  const base = baseDate || new Date();  // 如果沒有指定，預設為今天
+  const base = baseDate || new Date();
   
-  // 檢查日期是否有效
-  if (isNaN(hire.getTime())) {
-    Logger.log('⚠️ 無效的到職日: ' + hireDate);
-    return 0;
+  if (isNaN(hire.getTime())) return 0;
+  
+  let years = base.getFullYear() - hire.getFullYear();
+  
+  const thisYearAnniversary = new Date(hire);
+  thisYearAnniversary.setFullYear(base.getFullYear());
+  
+  if (base < thisYearAnniversary) {
+    years -= 1;
   }
   
-  const diffMs = base - hire;
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  const lastAnniversary = new Date(hire);
+  lastAnniversary.setFullYear(hire.getFullYear() + years);
   
-  return diffDays / 365.25;  // 回傳年資（小數）
+  const nextAnniversary = new Date(hire);
+  nextAnniversary.setFullYear(lastAnniversary.getFullYear() + 1);
+  
+  const fraction = (base - lastAnniversary) / (nextAnniversary - lastAnniversary);
+  
+  return years + fraction;
 }
 
 /**
- * ⭐ 新增：根據年資計算特休天數（小時制）
+ * ✅ 根據勞基法計算特休天數（依年資級距）
  * 
- * 台灣勞基法規定：
+ * 台灣勞基法規定（天數）：
  * - 未滿 6 個月：0 天
- * - 滿 6 個月：3 天
- * - 滿 1 年：7 天
- * - 滿 2 年：10 天
- * - 滿 3 年：14 天
- * - 滿 5 年：15 天
- * - 滿 10 年：每年加 1 天，最高 30 天
+ * - 滿 6 個月未滿 1 年：3 天
+ * - 滿 1 年未滿 2 年：7 天
+ * - 滿 2 年未滿 3 年：10 天
+ * - 滿 3 年未滿 5 年：14 天
+ * - 滿 5 年未滿 10 年：15 天
+ * - 滿 10 年以上：每年加 1 天，最高 30 天
+ * 
+ * @param {number} yearsOfService - 年資（小數點，例如 1.5 代表 1.5 年）
+ * @returns {number} - 特休小時數（天數 × 8）
  */
-function calculateAnnualLeave(yearsOfService) {
+function calculateAnnualLeave(completedYears) {
+  // ⭐ completedYears 必須是整數（Math.floor 後的值）
   let days = 0;
-  
-  if (yearsOfService < 0.5) {
-    days = 0;        // 未滿半年：0天
-  } else if (yearsOfService < 1) {
-    days = 3;        // 滿半年：3天
-  } else if (yearsOfService < 2) {
-    days = 7;        // 滿1年：7天
-  } else if (yearsOfService < 3) {
-    days = 10;       // 滿2年：10天
-  } else if (yearsOfService < 5) {
-    days = 14;       // 滿3年：14天
-  } else if (yearsOfService < 10) {
-    days = 15;       // 滿5年：15天
+
+  if (completedYears < 1) {
+    days = 0; // 未滿1年（滿6個月的3天由 getCurrentAnnualLeaveInfo 單獨處理）
+  } else if (completedYears < 2) {
+    days = 7;
+  } else if (completedYears < 3) {
+    days = 10;
+  } else if (completedYears < 5) {
+    days = 14;
+  } else if (completedYears < 10) {
+    days = 15;
   } else {
-    // 滿10年：每年加1天，最高30天
-    const extraYears = Math.floor(yearsOfService - 10);
-    days = Math.min(15 + extraYears, 30);
+    const extraYears = completedYears - 10;
+    days = Math.min(15 + extraYears + 1, 30);
   }
+
+  return days * 8;
+}
+
+
+/**
+ * ✅ 即時計算員工當前「應享有」的特休時數（考量到期）
+ * 
+ * 邏輯說明：
+ * - 特休以「到職週年日」為週期，每年重新給予
+ * - 每個週期的特休必須在「下一個週年日」前使用，否則到期歸零（或依公司規定）
+ * - 此函數計算「當前週期」應有的特休時數
+ * 
+ * 範例：
+ *   到職日：2023-07-01
+ *   今天：2025-03-04
+ *   → 年資 = 1.67 年 → 應得 7 天 = 56 小時（進入第 2 個週期）
+ *   → 當前週期：2024-07-01 ~ 2025-06-30
+ *   → 本週期已給予 56 小時
+ * 
+ * @param {Date} hireDate - 到職日
+ * @param {Date} [baseDate] - 計算基準日（預設今天）
+ * @returns {{currentHours: number, periodStart: Date, periodEnd: Date, yearsOfService: number}}
+ */
+function getCurrentAnnualLeaveInfo(hireDate, baseDate) {
+  const hire = new Date(hireDate);
+  const today = baseDate || new Date();
+
+  if (isNaN(hire.getTime())) {
+    return { currentHours: 0, periodStart: null, periodEnd: null, yearsOfService: 0 };
+  }
+
+  const yearsOfService = calculateYearsOfService(hire, today);
   
-  return days * 8;  // 轉換為小時
+  // ⭐ 關鍵修正：加入微小容差防止浮點數邊界問題
+  const TOLERANCE = 1e-6;
+  const completedYears = Math.floor(yearsOfService + TOLERANCE);
+
+  if (yearsOfService < 0.5 - TOLERANCE) {
+    return {
+      currentHours: 0,
+      periodStart: null,
+      periodEnd: null,
+      yearsOfService: yearsOfService
+    };
+  } else if (yearsOfService < 1 - TOLERANCE) {
+    // 滿6個月未滿1年
+    const periodStart = new Date(hire);
+    periodStart.setMonth(periodStart.getMonth() + 6);
+
+    const firstAnniversary = new Date(hire);
+    firstAnniversary.setFullYear(hire.getFullYear() + 1);
+    const periodEnd = new Date(firstAnniversary);
+    periodEnd.setDate(periodEnd.getDate() - 1);
+
+    return {
+      currentHours: 3 * 8, // 24 小時
+      periodStart: periodStart,
+      periodEnd: periodEnd,
+      yearsOfService: yearsOfService
+    };
+  } else {
+    // 滿1年以上
+    const periodStart = new Date(hire);
+    periodStart.setFullYear(hire.getFullYear() + completedYears);
+
+    const nextAnniversary = new Date(hire);
+    nextAnniversary.setFullYear(hire.getFullYear() + completedYears + 1);
+    const periodEnd = new Date(nextAnniversary);
+    periodEnd.setDate(periodEnd.getDate() - 1);
+
+    const hoursForCurrentPeriod = calculateAnnualLeave(completedYears);
+
+    Logger.log(`📅 特休週期計算:`);
+    Logger.log(`   到職日: ${formatDate(hire)}`);
+    Logger.log(`   今天: ${formatDate(today)}`);
+    Logger.log(`   年資: ${yearsOfService.toFixed(6)} 年`);
+    Logger.log(`   完整年數: ${completedYears}`);
+    Logger.log(`   當前週期: ${formatDate(periodStart)} ~ ${formatDate(periodEnd)}`);
+    Logger.log(`   本週期應得: ${hoursForCurrentPeriod} 小時 (${hoursForCurrentPeriod / 8} 天)`);
+
+    return {
+      currentHours: hoursForCurrentPeriod,
+      periodStart: periodStart,
+      periodEnd: periodEnd,
+      yearsOfService: yearsOfService
+    };
+  }
 }
 
 /**
@@ -1082,49 +1102,6 @@ function migrateLeaveBalanceSheet() {
   );
 }
 
-/**
- * 🧪 測試函數
- */
-function testLeaveBalanceComplete() {
-  Logger.log('🧪 測試完整的假期餘額系統');
-  Logger.log('');
-  
-  const token = '7dac1161-bbac-487d-900b-3e06c1acab8d';  // ⚠️ 替換成有效 token
-  
-  Logger.log('📋 步驟 1：初始化假期餘額');
-  const initResult = initializeEmployeeLeave(token);
-  Logger.log('   結果: ' + JSON.stringify(initResult));
-  Logger.log('');
-  
-  Logger.log('📋 步驟 2：查詢假期餘額');
-  const balanceResult = getLeaveBalance(token);
-  Logger.log('   結果: ' + JSON.stringify(balanceResult, null, 2));
-  Logger.log('');
-  
-  if (balanceResult.ok) {
-    Logger.log('✅✅✅ 測試成功！');
-    Logger.log('');
-    Logger.log('📊 假期餘額:');
-    const balance = balanceResult.balance;
-    Logger.log('   特休假: ' + balance.annualLeave + ' 天');
-    Logger.log('   病假: ' + balance.sickLeave + ' 天');
-    Logger.log('   事假: ' + balance.personalLeave + ' 天');
-    Logger.log('   喪假: ' + balance.bereavementLeave + ' 天');
-    Logger.log('   婚假: ' + balance.marriageLeave + ' 天');
-    Logger.log('   產假: ' + balance.maternityLeave + ' 天');
-    Logger.log('   陪產假: ' + balance.paternityLeave + ' 天');
-    Logger.log('   產檢假: ' + balance.prenatalCheckupLeave + ' 天');
-    Logger.log('   生理假: ' + balance.menstrualLeave + ' 天');
-    Logger.log('   家庭照顧假: ' + balance.familyCareLeave + ' 天');
-    Logger.log('   公假: ' + (balance.officialLeave === 0 ? '無上限' : balance.officialLeave + ' 天'));
-    Logger.log('   公傷病假: ' + (balance.occupationalInjuryLeave === 0 ? '無上限' : balance.occupationalInjuryLeave + ' 天'));
-    Logger.log('   疫苗接種假: ' + (balance.vaccinationLeave === 0 ? '無上限' : balance.vaccinationLeave + ' 天'));
-    Logger.log('   防疫照顧假: ' + (balance.epidemicCareLeave === 0 ? '無上限' : balance.epidemicCareLeave + ' 天'));
-  } else {
-    Logger.log('❌ 測試失敗');
-  }
-}
-
 // LeaveManagement.gs - 小時制請假系統（完整修正版 + 餘額扣除）
 
 /**
@@ -1135,9 +1112,6 @@ function reviewLeaveRequest(sessionToken, rowNumber, reviewAction, comment) {
     Logger.log('═══════════════════════════════════════');
     Logger.log('📋 開始審核請假');
     Logger.log('═══════════════════════════════════════');
-    Logger.log(`   行號: ${rowNumber}`);
-    Logger.log(`   動作: ${reviewAction}`);
-    Logger.log('');
     
     const employee = checkSession_(sessionToken);
     
@@ -1159,19 +1133,14 @@ function reviewLeaveRequest(sessionToken, rowNumber, reviewAction, comment) {
     const sheet = getLeaveRecordsSheet();
     const record = sheet.getRange(rowNumber, 1, 1, 14).getValues()[0];
     
+    const userId = record[1];
+    const employeeName = record[2];
+    const leaveType = record[4];
+    const workHours = record[7];  // 直接使用計算好的工時
     
-    const userId = record[1];           // B: 員工ID
-    const employeeName = record[2];     // C: 姓名
-    const leaveType = record[4];        // E: 假別
-    const workHours = record[7];        // H: 工作時數 ⭐
-    const days = record[8];             // I: 天數
-    
-    Logger.log('📋 請假資料:');
-    Logger.log(`   員工: ${employeeName} (${userId})`);
+    Logger.log(`   員工: ${employeeName}`);
     Logger.log(`   假別: ${leaveType}`);
     Logger.log(`   時數: ${workHours} 小時`);
-    Logger.log(`   天數: ${days} 天`);
-    Logger.log('');
     
     // 更新狀態
     const status = (reviewAction === 'approve') ? 'APPROVED' : 'REJECTED';
@@ -1181,18 +1150,12 @@ function reviewLeaveRequest(sessionToken, rowNumber, reviewAction, comment) {
     sheet.getRange(rowNumber, 13).setValue(new Date());
     sheet.getRange(rowNumber, 14).setValue(comment || '');
     
-    Logger.log(`✅ 審核狀態已更新: ${status}`);
-    Logger.log('');
-    
     if (reviewAction === 'approve') {
       Logger.log('💰 開始扣除假期餘額...');
       
-      // ⭐ 傳入小時數（不是天數）
       const deductResult = deductLeaveBalance(userId, leaveType, workHours);
       
       if (!deductResult.ok) {
-        Logger.log('❌ 扣除餘額失敗: ' + deductResult.msg);
-        
         // 回滾狀態
         sheet.getRange(rowNumber, 11).setValue('PENDING');
         
@@ -1203,16 +1166,25 @@ function reviewLeaveRequest(sessionToken, rowNumber, reviewAction, comment) {
         };
       }
       
-      Logger.log('✅ 假期餘額扣除成功');
-      Logger.log(`   ${leaveType}: 扣除 ${workHours} 小時`);  // ⭐
-      Logger.log(`   剩餘: ${deductResult.remaining} 小時`);  // ⭐
+      Logger.log(`   剩餘: ${deductResult.remaining} 小時`);
+
+      // ⭐ 審核通過後自動重算薪資（只在 approve 時執行）
+      const yearMonth = (() => {
+        const startDateTime = record[5];
+        const d = startDateTime instanceof Date ? startDateTime : new Date(startDateTime);
+        return Utilities.formatDate(d, 'Asia/Taipei', 'yyyy-MM');
+      })();
+      
+      const recalcResult = _recalcOne(userId, yearMonth);
+      if (recalcResult.success) {
+        Logger.log(`✅ 已自動重算 ${userId} ${yearMonth} 薪資`);
+      } else {
+        Logger.log(`⚠️ 自動重算失敗: ${recalcResult.message}`);
+      }
     }
-    
-    Logger.log('');
-    Logger.log('═══════════════════════════════════════');
+
     Logger.log('✅✅✅ 審核完成');
-    Logger.log('═══════════════════════════════════════');
-    
+
     return {
       ok: true,
       msg: "審核完成"
@@ -1220,7 +1192,6 @@ function reviewLeaveRequest(sessionToken, rowNumber, reviewAction, comment) {
     
   } catch (error) {
     Logger.log('❌ reviewLeaveRequest 錯誤: ' + error);
-    Logger.log('錯誤堆疊: ' + error.stack);
     return {
       ok: false,
       msg: error.message
@@ -1232,16 +1203,16 @@ function reviewLeaveRequest(sessionToken, rowNumber, reviewAction, comment) {
  */
 function calculateWorkHoursAndDays(start, end) {
   try {
-    Logger.log('💡 計算工作時數和天數');
+    Logger.log('💡 計算工作時數和天數（0.5小時精度）');
     Logger.log(`   開始: ${start.toISOString()}`);
     Logger.log(`   結束: ${end.toISOString()}`);
     
-    // ⭐ 工作時間設定
-    const WORK_START_HOUR = 9;      // 上班 08:00 (原本是 9)
-    const WORK_END_HOUR = 18;       // 下班 17:00 (原本是 18)
+    // 工作時間設定
+    const WORK_START_HOUR = 8;      // 上班 08:00
+    const WORK_END_HOUR = 17;       // 下班 17:00
     const LUNCH_START = 12;         // 午休開始 12:00
     const LUNCH_END = 13;           // 午休結束 13:00
-    const DAILY_WORK_HOURS = 8;     // 每日工作時數（已扣午休）
+    const DAILY_WORK_HOURS = 8;     // 每日工作時數
     
     // 判斷是否同一天
     const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate());
@@ -1252,7 +1223,7 @@ function calculateWorkHoursAndDays(start, end) {
     if (isSameDay) {
       Logger.log('   ℹ️ 同日請假');
       
-      // 限制在工作時間內
+      // 限制在工作時間內，支持分鐘精度
       const startHour = Math.max(
         start.getHours() + start.getMinutes() / 60,
         WORK_START_HOUR
@@ -1269,7 +1240,7 @@ function calculateWorkHoursAndDays(start, end) {
       
       let workHours = endHour - startHour;
       
-      // 扣除午休時間（如果跨越）
+      // 扣除午休時間
       if (startHour < LUNCH_END && endHour > LUNCH_START) {
         const lunchOverlapStart = Math.max(startHour, LUNCH_START);
         const lunchOverlapEnd = Math.min(endHour, LUNCH_END);
@@ -1280,7 +1251,9 @@ function calculateWorkHoursAndDays(start, end) {
       }
       
       workHours = Math.max(0, workHours);
-      const finalHours = Math.round(workHours * 100) / 100;
+      
+      // ⭐ 四捨五入到 0.5 小時精度
+      const finalHours = Math.round(workHours * 2) / 2;
       const days = Math.round((finalHours / 8) * 100) / 100;
       
       Logger.log(`   ✅ 同日請假：${finalHours} 小時 = ${days} 天`);
@@ -1297,7 +1270,7 @@ function calculateWorkHoursAndDays(start, end) {
       
       let totalWorkHours = 0;
       
-      // 🔹 第一天
+      // 第一天
       const firstDayStartHour = Math.max(
         start.getHours() + start.getMinutes() / 60,
         WORK_START_HOUR
@@ -1319,7 +1292,7 @@ function calculateWorkHoursAndDays(start, end) {
       
       Logger.log(`   📅 第一天: ${firstDayHours.toFixed(2)} 小時`);
       
-      // 🔹 中間完整工作日
+      // 中間完整工作日
       const daysDiff = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
       
       if (daysDiff > 1) {
@@ -1330,7 +1303,7 @@ function calculateWorkHoursAndDays(start, end) {
         Logger.log(`   📅 中間 ${middleDays} 天: ${middleHours} 小時`);
       }
       
-      // 🔹 最後一天
+      // 最後一天
       const lastDayEndHour = Math.min(
         Math.max(
           end.getHours() + end.getMinutes() / 60,
@@ -1355,7 +1328,8 @@ function calculateWorkHoursAndDays(start, end) {
       
       Logger.log(`   📅 最後一天: ${lastDayHours.toFixed(2)} 小時`);
       
-      const finalHours = Math.round(totalWorkHours * 100) / 100;
+      // ⭐ 四捨五入到 0.5 小時精度
+      const finalHours = Math.round(totalWorkHours * 2) / 2;
       const days = Math.round((finalHours / 8) * 100) / 100;
       
       Logger.log(`   ✅ 總工時: ${finalHours} 小時 = ${days} 天`);
@@ -1644,76 +1618,97 @@ function deductLeaveBalance(userId, leaveType, hours) {
   }
 }
 
-/**
- * ⭐ 修正版：批次更新所有員工的特休餘額（累加制）
- */
 function updateAllEmployeesAnnualLeave() {
   Logger.log('═══════════════════════════════════════');
-  Logger.log('🔄 開始批次更新特休餘額（累加制）');
+  Logger.log('🔄 開始批次更新特休餘額');
   Logger.log('═══════════════════════════════════════');
-  Logger.log('');
-  
+
   const balanceSheet = getLeaveBalanceSheet();
   const balanceValues = balanceSheet.getDataRange().getValues();
-  
+  const today = new Date();
+  const todayStr = Utilities.formatDate(today, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+
+  const todayMonth = today.getMonth();
+  const todayDate = today.getDate();
+
   let updateCount = 0;
-  
+
   for (let i = 1; i < balanceValues.length; i++) {
-    const userId = balanceValues[i][0];                // A: 員工ID
-    const employeeName = balanceValues[i][1];          // B: 姓名
-    const hireDate = balanceValues[i][2];              // C: 到職日
-    const currentAnnualLeaveHours = balanceValues[i][3]; // D: 特休（小時）
-    
+    const userId = balanceValues[i][0];
+    const employeeName = balanceValues[i][1];
+    const hireDate = balanceValues[i][2];
+
     if (!hireDate) {
       Logger.log(`⚠️ ${employeeName} 沒有到職日，跳過`);
       continue;
     }
-    
-    // ⭐ 計算今年的年資和應得特休
-    const today = new Date();
-    const yearsOfService = calculateYearsOfService(hireDate, today);
-    const shouldHaveHours = calculateAnnualLeave(yearsOfService);
-    
-    // ⭐⭐⭐ 修正：計算去年的年資和應得特休
-    const lastYear = new Date(today);
-    lastYear.setFullYear(lastYear.getFullYear() - 1);
-    const lastYearService = calculateYearsOfService(hireDate, lastYear);
-    const lastYearHours = calculateAnnualLeave(lastYearService);
-    
-    // ⭐ 計算新增的天數（今年應得 - 去年應得）
-    const additionalHours = shouldHaveHours - lastYearHours;
-    
-    if (additionalHours > 0) {
-      const newBalance = currentAnnualLeaveHours + additionalHours;
-      
-      Logger.log(`📊 ${employeeName}:`);
-      Logger.log(`   年資: ${yearsOfService.toFixed(2)} 年`);
-      Logger.log(`   今年應得: ${shouldHaveHours}h (${shouldHaveHours/8}天)`);
-      Logger.log(`   去年應得: ${lastYearHours}h (${lastYearHours/8}天)`);
-      Logger.log(`   新增: ${additionalHours}h (${additionalHours/8}天)`);
-      Logger.log(`   原餘額: ${currentAnnualLeaveHours}h`);
-      Logger.log(`   新餘額: ${newBalance}h`);
-      
-      // 更新特休（D 欄）
-      balanceSheet.getRange(i + 1, 4).setValue(newBalance);
-      // 更新時間（S 欄）
-      balanceSheet.getRange(i + 1, 19).setValue(new Date());
-      
-      updateCount++;
-    } else {
-      Logger.log(`📊 ${employeeName}: 年資未增加，無需更新`);
+
+    const hire = new Date(hireDate);
+    const yearsOfService = calculateYearsOfService(hire, today);
+    const currentAnnualLeave = parseFloat(balanceValues[i][3]) || 0;
+
+    // ⭐ 補漏機制：特休是 0 但年資已超過 6 個月
+    if (currentAnnualLeave === 0 && yearsOfService >= 0.5) {
+      const leaveInfo = getCurrentAnnualLeaveInfo(hire, today);
+      const correctHours = leaveInfo.currentHours;
+
+      if (correctHours > 0) {
+        balanceSheet.getRange(i + 1, 4).setValue(correctHours);
+        balanceSheet.getRange(i + 1, 19).setValue(new Date());
+        Logger.log(`🔧 補漏 ${employeeName}: 0 → ${correctHours} 小時`);
+        updateCount++;
+        continue; // 補漏完就跳到下一個員工
+      }
     }
+
+    // ⭐ 今天已更新過則跳過（防止每小時重複觸發）
+    const lastUpdateDate = balanceValues[i][18];
+    if (lastUpdateDate) {
+      const lastUpdateStr = Utilities.formatDate(
+        new Date(lastUpdateDate),
+        Session.getScriptTimeZone(),
+        'yyyy-MM-dd'
+      );
+      if (lastUpdateStr === todayStr) {
+        Logger.log(`⏭️ ${employeeName}: 今天已更新過，跳過`);
+        continue;
+      }
+    }
+
+    // 判斷今天是否為週年日或半年日
+    const halfYearDate = new Date(hire);
+    halfYearDate.setMonth(halfYearDate.getMonth() + 6);
+
+    const isAnniversary = (todayMonth === hire.getMonth() && todayDate === hire.getDate());
+    const isHalfYear = (todayMonth === halfYearDate.getMonth() && todayDate === halfYearDate.getDate());
+    const isHalfYearTrigger = isHalfYear && yearsOfService < 1;
+    const isAnniversaryTrigger = isAnniversary && yearsOfService >= 1;
+
+    if (!isHalfYearTrigger && !isAnniversaryTrigger) {
+      Logger.log(`📊 ${employeeName}: 今天非觸發日，跳過`);
+      continue;
+    }
+
+    const leaveInfo = getCurrentAnnualLeaveInfo(hire, today);
+    const newAnnualHours = leaveInfo.currentHours;
+
+    Logger.log(`🎂 ${employeeName} 週年更新: ${newAnnualHours} 小時`);
+
+    if (isHalfYearTrigger) {
+      balanceSheet.getRange(i + 1, 4).setValue(24);
+      Logger.log(`   ✅ 滿半年，設定 24 小時`);
+    } else {
+      const oldRemaining = balanceValues[i][3];
+      balanceSheet.getRange(i + 1, 4).setValue(oldRemaining + newAnnualHours);
+      Logger.log(`   ✅ 週年日，累加後共 ${oldRemaining + newAnnualHours} 小時`);
+    }
+
+    balanceSheet.getRange(i + 1, 19).setValue(new Date());
+    updateCount++;
   }
-  
-  Logger.log('');
-  Logger.log('═══════════════════════════════════════');
-  Logger.log(`✅ 批次更新完成，共更新 ${updateCount} 筆`);
-  Logger.log('═══════════════════════════════════════');
-  
-  return {
-    ok: true,
-    updateCount: updateCount
-  };
+
+  Logger.log(`\n✅ 完成，共更新 ${updateCount} 筆`);
+  return { ok: true, updateCount: updateCount };
 }
 /**
  * 🔄 遷移工具：為現有員工加入到職日欄位（18欄 → 19欄）
@@ -2298,4 +2293,121 @@ function checkCurrentStructure() {
   } else {
     Logger.log('⚠️ 結構異常，請檢查');
   }
+}
+
+
+
+/**
+ * ✅ 取得假期餘額（含即時年資顯示）
+ * 在 getLeaveBalance() 中可選擇性附加特休資訊
+ */
+function getAnnualLeaveStatus(sessionToken) {
+  try {
+    const employee = checkSession_(sessionToken);
+    if (!employee.ok || !employee.user) return { ok: false };
+
+    const balanceResult = getLeaveBalance(sessionToken);
+    if (!balanceResult.ok) return balanceResult;
+
+    const sheet = getLeaveBalanceSheet();
+    const values = sheet.getDataRange().getValues();
+
+    for (let i = 1; i < values.length; i++) {
+      if (values[i][0] === employee.user.userId) {
+        const hireDate = values[i][2];
+        const leaveInfo = getCurrentAnnualLeaveInfo(hireDate);
+
+        return {
+          ok: true,
+          balance: balanceResult.balance,
+          annualLeaveStatus: {
+            yearsOfService: leaveInfo.yearsOfService.toFixed(2),
+            currentPeriodHours: leaveInfo.currentHours,
+            currentPeriodDays: leaveInfo.currentHours / 8,
+            periodStart: leaveInfo.periodStart ? formatDate(leaveInfo.periodStart) : null,
+            periodEnd: leaveInfo.periodEnd ? formatDate(leaveInfo.periodEnd) : null,
+            remainingHours: balanceResult.balance.ANNUAL_LEAVE
+          }
+        };
+      }
+    }
+
+    return { ok: false, msg: '找不到員工資料' };
+  } catch (e) {
+    return { ok: false, msg: e.message };
+  }
+}
+
+
+/**
+ * 🧪 測試特休即時計算
+ */
+function testAnnualLeaveCalculation() {
+  Logger.log('🧪 測試特休即時計算');
+  Logger.log('');
+
+  const testCases = [
+    { label: '未滿 6 個月', months: 3 },
+    { label: '滿 6 個月',   months: 6 },
+    { label: '滿 1 年',     months: 12 },
+    { label: '滿 2 年',     months: 24 },
+    { label: '滿 3 年',     months: 36 },
+    { label: '滿 5 年',     months: 60 },
+    { label: '滿 10 年',    months: 120 },
+    { label: '滿 15 年',    months: 180 },
+    { label: '滿 25 年',    months: 300 },
+  ];
+
+  const today = new Date();
+
+  testCases.forEach(tc => {
+    const hireDate = new Date(today);
+    hireDate.setMonth(hireDate.getMonth() - tc.months);
+
+    const info = getCurrentAnnualLeaveInfo(hireDate, today);
+
+    Logger.log(`📋 ${tc.label}:`);
+    Logger.log(`   到職日: ${formatDate(hireDate)}`);
+    Logger.log(`   年資: ${info.yearsOfService.toFixed(2)} 年`);
+    Logger.log(`   特休: ${info.currentHours} 小時 (${info.currentHours / 8} 天)`);
+    if (info.periodStart) {
+      Logger.log(`   有效期: ${formatDate(info.periodStart)} ~ ${formatDate(info.periodEnd)}`);
+    }
+    Logger.log('');
+  });
+}
+
+
+function fixAnnualLeaveByHireDate() {
+  const balanceSheet = getLeaveBalanceSheet();
+  const values = balanceSheet.getDataRange().getValues();
+  const today = new Date();
+
+  for (let i = 1; i < values.length; i++) {
+    const hireDate = values[i][2]; // C 欄：到職日
+    if (!hireDate) continue;
+
+    const leaveInfo = getCurrentAnnualLeaveInfo(new Date(hireDate), today);
+    const correctHours = leaveInfo.currentHours;
+
+    // 只有當特休是 0 且年資已超過 6 個月時才修正
+    if (values[i][3] === 0 && correctHours > 0) {
+      balanceSheet.getRange(i + 1, 4).setValue(correctHours);
+      balanceSheet.getRange(i + 1, 19).setValue(new Date());
+      Logger.log(`✅ 修正 ${values[i][1]}: 0 → ${correctHours} 小時`);
+    }
+  }
+  Logger.log('完成修正');
+}
+
+
+function debugLeaveBalance() {
+  const token = 'f41e2a20-c165-4469-8e89-bea43a7f7baa';
+  
+  // 檢查工作表結構
+  checkCurrentStructure();
+  
+  // 直接查詢
+  const result = getLeaveBalance(token);
+  Logger.log('結果: ' + JSON.stringify(result));
 }

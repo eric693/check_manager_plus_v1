@@ -240,7 +240,22 @@ function reviewOvertimeRequest(sessionToken, rowNumber, action, comment) {
     sheet.getRange(rowNumber, 14).setValue(comment || "");    // 審核意見
     
     SpreadsheetApp.flush();
-    
+    // 在 reviewOvertimeRequest 裡，審核成功寫入後加入這段
+    if (isApprove) {
+      // ⭐ 審核通過後自動重算薪資
+      try {
+        const overtimeDateStr = formatDate(overtimeDate);
+        const yearMonth = overtimeDateStr.substring(0, 7); // 取 YYYY-MM
+        const recalcResult = _recalcOne(employeeId, yearMonth);
+        if (recalcResult.success) {
+          Logger.log(`✅ 已自動重算 ${employeeId} ${yearMonth} 薪資`);
+        } else {
+          Logger.log(`⚠️ 自動重算失敗: ${recalcResult.message}`);
+        }
+      } catch (err) {
+        Logger.log(`⚠️ 自動重算發生錯誤: ${err.message}`);
+      }
+    }
     // 驗證寫入狀態
     const actualStatus = String(sheet.getRange(rowNumber, 10).getValue()).trim().toLowerCase();
     Logger.log(`✅ 審核完成: 預期=${status}, 實際=${actualStatus}`);
@@ -365,4 +380,25 @@ function handleReviewOvertime(params) {
     reviewAction,  // ✅ 改用 reviewAction
     comment || ""
   );
+}
+
+function testDriverOvertime() {
+  const employeeId = 'Uf664a35632b736301d674d8b2cc3f8c0'; // ⚠️ 換成實際司機ID
+  const yearMonth = '2026-03';
+  
+  const result = calculateMonthlySalary(employeeId, yearMonth);
+  
+  Logger.log('加班費: ' + (result.data.weekdayOvertimePay + result.data.restdayOvertimePay + result.data.holidayOvertimePay));
+  Logger.log('總加班時數: ' + result.data.totalOvertimeHours);
+  
+  const totalPay = result.data.weekdayOvertimePay + result.data.restdayOvertimePay + result.data.holidayOvertimePay;
+  const rate = totalPay / result.data.totalOvertimeHours;
+  
+  Logger.log('實際每小時費率: $' + rate.toFixed(2));
+  
+  if (Math.abs(rate - 200) < 1) {
+    Logger.log('✅ 確認！加班費固定 $200/小時');
+  } else {
+    Logger.log('❌ 費率不對，實際是 $' + rate.toFixed(2) + '/小時');
+  }
 }

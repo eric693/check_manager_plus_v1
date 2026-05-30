@@ -87,6 +87,13 @@ function doGet(e) {
       case "initializeEmployeeLeave":
         return respond1(handleInitializeEmployeeLeave(e.parameter));
       
+      // ==================== 公告系統 ====================
+      case "getAnnouncements":
+        return respond1(handleGetAnnouncements());
+      case "addAnnouncement":
+        return respond1(handleAddAnnouncement(e.parameter));
+      case "deleteAnnouncement":
+        return respond1(handleDeleteAnnouncement(e.parameter));
       // ==================== 排班系統 ====================
       case "addShift":
         return respond1(handleAddShift(e.parameter));
@@ -122,6 +129,12 @@ function doGet(e) {
         return respond1(handleSaveMonthlySalary(e.parameter));
       case "getAllMonthlySalary":
         return respond1(handleGetAllMonthlySalary(e.parameter));
+      case 'updateMonthlySalaryWorkHours':
+        return respond1(updateMonthlySalaryWorkHoursAPI(e.parameter));
+      case 'recalculateMonthlySalary':
+        return respond1(recalculateMonthlySalaryAPI(e.parameter));
+      case 'getAllEmployeeSalaryConfig':
+        return respond1(getAllEmployeeSalaryConfigAPI(e.parameter));
        // ==================== 日薪系統 ====================
       case "setDailyEmployee":
         return respond1(handleSetDailyEmployee(e.parameter));
@@ -135,7 +148,6 @@ function doGet(e) {
         return respond1(handleGetAllDailyEmployees(e.parameter));
       case "getDailySalaryRecords":
         return respond1(handleGetDailySalaryRecords(e.parameter));
-
 
       case 'exportAllSalaryExcel':
         try {

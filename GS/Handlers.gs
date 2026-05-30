@@ -1576,13 +1576,12 @@ function handleCalculateMonthlySalary(params) {
     Logger.log('💰 計算月薪: ' + params.employeeId + ', ' + params.yearMonth);
     
     const result = calculateMonthlySalary(params.employeeId, params.yearMonth);
-    
     return { 
-      ok: result.success, 
+      ok: result.ok || result.success || false,
       data: result.data, 
-      msg: result.message 
+      msg: result.message || result.msg
     };
-    
+        
   } catch (error) {
     Logger.log('❌ handleCalculateMonthlySalary 錯誤: ' + error);
     return { ok: false, msg: error.message };

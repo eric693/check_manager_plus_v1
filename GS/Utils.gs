@@ -35,6 +35,10 @@ function checkAttendanceAbnormal(attendanceRows) {
   
   const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
   
+  // ===== ⭐⭐⭐ 新增：載入國定假日 =====
+  const publicHolidays = getPublicHolidays_();
+  Logger.log(`🎌 載入國定假日: ${publicHolidays.size} 天`);
+  
   // ===== 步驟 1：按使用者和日期分組 =====
   let targetUserId = null;
   let targetMonth = null;
@@ -71,6 +75,12 @@ function checkAttendanceAbnormal(attendanceRows) {
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const dayOfWeek = new Date(year, month - 1, day).getDay();
       const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+      
+      // ⭐⭐⭐ 新增：國定假日也跳過
+      if (publicHolidays.has(dateStr)) {
+        Logger.log(`🎌 跳過國定假日: ${dateStr}`);
+        continue;
+      }
       
       if (dateStr < today && !isWeekend) {
         allDatesInMonth.push(dateStr);
@@ -191,6 +201,34 @@ function checkAttendanceAbnormal(attendanceRows) {
   Logger.log("═══════════════════════════════════════");
   
   return abnormalRecords;
+}
+
+// ⭐⭐⭐ 新增這個輔助函數（放在 Utils.gs 任意位置）
+function getPublicHolidays_() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName('國定假日');
+  if (!sheet) {
+    Logger.log('⚠️ 找不到「國定假日」工作表');
+    return new Set();
+  }
+  
+  const values = sheet.getDataRange().getValues();
+  const holidays = new Set();
+  
+  for (let i = 1; i < values.length; i++) {
+    const dateValue = values[i][0];
+    if (!dateValue) continue;
+    
+    let dateStr;
+    if (dateValue instanceof Date) {
+      dateStr = Utilities.formatDate(dateValue, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    } else {
+      dateStr = String(dateValue).trim();
+    }
+    
+    if (dateStr) holidays.add(dateStr);
+  }
+  
+  return holidays;
 }
 
 function checkAttendance(attendanceRows) {

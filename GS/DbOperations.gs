@@ -622,17 +622,6 @@ function getAttendanceRecords(monthParam, userIdParam) {
   }));
 }
 
-/**
- * 取得出勤詳細資料（用於報表匯出）
- */
-/**
- * ✅ 修正版：取得出勤詳細資料（修正 localeCompare 錯誤）
- * 
- * 修正內容：
- * 1. 修正請假記錄合併時可能產生 undefined date 的問題
- * 2. 加強日期格式驗證
- * 3. 改進錯誤處理
- */
 function getAttendanceDetails(monthParam, userIdParam) {
   try {
     Logger.log('📋 getAttendanceDetails 開始');
@@ -692,6 +681,14 @@ function getAttendanceDetails(monthParam, userIdParam) {
       };
     });
     
+    // ⭐ 加入當月國定假日
+    const publicHolidays = getPublicHolidays_();
+    publicHolidays.forEach(dateKey => {
+      if (dateKey.startsWith(monthParam)) {
+        allDates.add(dateKey);
+      }
+    });
+
     // 填入打卡記錄
     records.forEach(r => {
       const dateKey = formatDate(r.date);
@@ -779,7 +776,13 @@ function getAttendanceDetails(monthParam, userIdParam) {
         }
       }
     });
-    
+  
+
+    Object.keys(dailyRecords).forEach(dateKey => {
+      if (publicHolidays.has(dateKey)) {
+        dailyRecords[dateKey].reason = 'STATUS_HOLIDAY';
+      }
+    });
     // ✅ 修正：轉換為陣列並排序（確保所有 date 都存在）
     const result = Object.values(dailyRecords)
       .filter(r => r.date) // 過濾掉沒有 date 的記錄
@@ -2629,4 +2632,107 @@ function getEmployeeMonthlyPunchData(employeeId, yearMonth) {
       message: error.message
     };
   }
+}
+
+
+/**
+ * 讀取國定假日清單
+ */
+function getPublicHolidays() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName('國定假日');
+  if (!sheet) return new Set();
+  
+  const values = sheet.getDataRange().getValues();
+  const holidays = new Set();
+  
+  for (let i = 1; i < values.length; i++) {
+    const dateValue = values[i][0];
+    if (!dateValue) continue;
+    
+    let dateStr;
+    if (dateValue instanceof Date) {
+      dateStr = Utilities.formatDate(dateValue, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    } else {
+      dateStr = String(dateValue).trim();
+    }
+    
+    if (dateStr) holidays.add(dateStr);
+  }
+  
+  Logger.log('📅 載入國定假日: ' + holidays.size + ' 天');
+  return holidays;
+}
+
+
+// ====== 公告相關操作 ======
+
+function getAnnouncements() {
+  const ss = SpreadsheetApp.getActive();
+  let sheet = ss.getSheetByName("公告");
+  
+  // 若工作表不存在，自動建立
+  if (!sheet) {
+    sheet = ss.insertSheet("公告");
+    sheet.appendRow(["ID", "標題", "內容", "優先級", "發布時間", "發布人"]);
+    return [];
+  }
+  
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return []; // 只有標題列
+  
+  const announcements = [];
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (!row[0]) continue; // 跳過空行
+    announcements.push({
+      id: String(row[0]),
+      title: row[1],
+      content: row[2],
+      priority: row[3],
+      createdAt: row[4] ? new Date(row[4]).toISOString() : "",
+      createdBy: row[5]
+    });
+  }
+  
+  // 依優先級排序（high > normal > low），再依時間新到舊
+  const priorityOrder = { high: 0, normal: 1, low: 2 };
+  announcements.sort((a, b) => {
+    const pa = priorityOrder[a.priority] ?? 1;
+    const pb = priorityOrder[b.priority] ?? 1;
+    if (pa !== pb) return pa - pb;
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+  
+  return announcements;
+}
+
+function addAnnouncement(title, content, priority, createdBy) {
+  const ss = SpreadsheetApp.getActive();
+  let sheet = ss.getSheetByName("公告");
+  
+  if (!sheet) {
+    sheet = ss.insertSheet("公告");
+    sheet.appendRow(["ID", "標題", "內容", "優先級", "發布時間", "發布人"]);
+  }
+  
+  const id = "ann_" + new Date().getTime();
+  const now = new Date();
+  sheet.appendRow([id, title, content, priority || "normal", now, createdBy || ""]);
+  
+  return { success: true, id: id };
+}
+
+function deleteAnnouncement(id) {
+  const ss = SpreadsheetApp.getActive();
+  const sheet = ss.getSheetByName("公告");
+  if (!sheet) return { success: false, message: "公告工作表不存在" };
+  
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(id)) {
+      sheet.deleteRow(i + 1);
+      return { success: true };
+    }
+  }
+  return { success: false, message: "找不到該公告" };
 }
