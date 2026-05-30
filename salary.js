@@ -287,9 +287,11 @@ async function loadOvertimeRecordsCard(yearMonth, salaryData) {
         ) || 0;
         
         weekdayOvertimePay = parseFloat(
-            salaryData.weekdayOvertimePay !== undefined 
-                ? salaryData.weekdayOvertimePay 
-                : salaryData['平日加班費']
+            salaryData.weekdayOvertimePay !== undefined
+                ? salaryData.weekdayOvertimePay
+                : (salaryData.extendedOvertimePay !== undefined
+                    ? salaryData.extendedOvertimePay
+                    : salaryData['平日加班費'])
         ) || 0;
         
         restdayOvertimePay = parseFloat(
@@ -1210,8 +1212,8 @@ function displaySalaryCalculation(data, container) {
     
     const isHourly = data.salaryType === '時薪';
     
-    // ⭐ 修正：讀取三種加班費（兼容情況三的 extendedOvertimeFirst2h / extendedOvertimeAfter2h）
-    const weekdayOvertimePay = parseFloat(data.weekdayOvertimePay || data.extendedOvertimeFirst2h) || 0;
+    // 讀取加班費（兼容三種情況的欄位命名）
+    const weekdayOvertimePay = parseFloat(data.weekdayOvertimePay || data.extendedOvertimeFirst2h || data.extendedOvertimePay) || 0;
     const restdayOvertimePay = parseFloat(data.restdayOvertimePay || data.extendedOvertimeAfter2h) || 0;
     const holidayOvertimePay = parseFloat(data.holidayOvertimePay) || 0;
     const totalOvertimeHours = parseFloat(data.totalOvertimeHours) || 0;
@@ -1390,6 +1392,12 @@ function displaySalaryCalculation(data, container) {
                             <span class="font-mono">${formatCurrency(data.monthlyRestPay)}</span>
                         </div>
                     ` : ''}
+                    ${(data.monthlyBonus || 0) > 0 ? `
+                        <div class="calculation-row">
+                            <span>不固定獎金${data.bonusNote ? ' (' + data.bonusNote + ')' : ''}</span>
+                            <span class="font-mono">${formatCurrency(data.monthlyBonus)}</span>
+                        </div>
+                    ` : ''}
                     ${data.sickLeaveHours > 0 || data.personalLeaveHours > 0 ? `
                         <div class="calculation-row" style="background: rgba(239, 68, 68, 0.1); padding: 0.75rem; border-radius: 8px; margin-top: 0.5rem;">
                             <div style="width: 100%;">
@@ -1544,8 +1552,10 @@ async function saveSalaryRecord(data) {
             `&unusedLeavePay=${encodeURIComponent(data.unusedLeavePay || 0)}` +
             `&unusedLeaveDays=${encodeURIComponent(data.unusedLeaveDays || 0)}` +
             `&monthlyRestPay=${encodeURIComponent(data.monthlyRestPay || 0)}` +
-            `&monthlyRestMissedDays=${encodeURIComponent(data.monthlyRestMissedDays || 0)}` +  // ⭐ 改為統一的命名
-            
+            `&monthlyRestMissedDays=${encodeURIComponent(data.monthlyRestMissedDays || 0)}` +
+            `&monthlyBonus=${encodeURIComponent(data.monthlyBonus || 0)}` +
+            `&bonusNote=${encodeURIComponent(data.bonusNote || '')}` +
+
             // 扣款項目
             `&laborFee=${encodeURIComponent(data.laborFee || 0)}` +
             `&healthFee=${encodeURIComponent(data.healthFee || 0)}` +

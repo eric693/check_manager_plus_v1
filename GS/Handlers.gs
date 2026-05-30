@@ -1574,6 +1574,8 @@ function handleSaveMonthlySalary(params) {
         unusedLeaveDays: parseFloat(params.unusedLeaveDays) || 0,
         monthlyRestPay: parseFloat(params.monthlyRestPay) || 0,
         monthlyRestMissedDays: parseFloat(params.missedRestDays || params.monthlyRestMissedDays) || 0,
+        monthlyBonus: parseFloat(params.monthlyBonus) || 0,
+        bonusNote: params.bonusNote || '',
 
         // 法定扣款
         laborFee: parseFloat(params.laborFee) || 0,

@@ -327,7 +327,10 @@ function getMonthlySalarySheetEnhanced() {
       '銀行代碼', '銀行帳號',
 
       // AT-AV: 系統 (3 欄)
-      '狀態', '備註', '建立時間'
+      '狀態', '備註', '建立時間',
+
+      // AW-AX: 不固定獎金 (2 欄，情況三專用)
+      '不固定獎金', '獎金說明'
     ];
     
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -679,7 +682,11 @@ function saveMonthlySalary(salaryData) {
       // AT-AV: 系統欄位 (3欄)
       salaryData.status || "已計算",
       salaryData.note || "",
-      new Date()
+      new Date(),
+
+      // AW-AX: 不固定獎金（情況三專用）
+      salaryData.monthlyBonus || 0,
+      salaryData.bonusNote || ""
     ];
     
     Logger.log('📝 準備寫入的 row 長度: ' + row.length);

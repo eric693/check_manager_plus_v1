@@ -260,7 +260,8 @@ function calculateFactoryWorkerSalary(employeeId, yearMonth) {
       workAllowance: workAllowance,                // 工作津貼
       
       // 加班費
-      extendedOvertimePay: extendedOvertimePay,    // 延長工時加班費
+      extendedOvertimePay: extendedOvertimePay,    // 延長工時加班費（情況二原始欄位）
+      weekdayOvertimePay: extendedOvertimePay,     // 標準欄位名稱別名，供通用顯示/儲存使用
       restdayOvertimePay: restdayOvertimePay,      // 休息日加班費
       holidayOvertimePay: holidayOvertimePay,      // 國定假日加班費
       totalOvertimeHours: totalOvertimeHours,
@@ -281,11 +282,15 @@ function calculateFactoryWorkerSalary(employeeId, yearMonth) {
       personalLeaveDeduction: personalLeaveDeduction,
       leaveDeduction: totalLeaveDeduction,
       
-      // 其他扣款
+      // 其他扣款（情況二原始欄位）
       withholdingTax: withholdingTax,              // 代扣所得稅
       agencyFee: agencyFee,                        // 代扣仲介服務費
       healthCheckFee: healthCheckFee,              // 代扣健檢費
       agencyHandlingFee: agencyHandlingFee,        // 代扣代辦費
+      // 標準欄位名稱別名，供通用顯示/儲存使用
+      incomeTax: withholdingTax,                   // 對應所得稅欄位
+      otherDeduction1: agencyFee,                  // 對應其他扣款1（仲介費）
+      otherDeduction2: healthCheckFee + agencyHandlingFee, // 對應其他扣款2（健檢+代辦）
       
       // 總計
       grossSalary: grossSalary,
