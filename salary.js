@@ -1209,9 +1209,9 @@ function displaySalaryCalculation(data, container) {
     
     const isHourly = data.salaryType === '時薪';
     
-    // ⭐ 修正：讀取三種加班費
-    const weekdayOvertimePay = parseFloat(data.weekdayOvertimePay) || 0;
-    const restdayOvertimePay = parseFloat(data.restdayOvertimePay) || 0;
+    // ⭐ 修正：讀取三種加班費（兼容情況三的 extendedOvertimeFirst2h / extendedOvertimeAfter2h）
+    const weekdayOvertimePay = parseFloat(data.weekdayOvertimePay || data.extendedOvertimeFirst2h) || 0;
+    const restdayOvertimePay = parseFloat(data.restdayOvertimePay || data.extendedOvertimeAfter2h) || 0;
     const holidayOvertimePay = parseFloat(data.holidayOvertimePay) || 0;
     const totalOvertimeHours = parseFloat(data.totalOvertimeHours) || 0;
     
@@ -1469,7 +1469,7 @@ function displaySalaryCalculation(data, container) {
                                     </div>
                                 ` : ''}
                                 ${data.personalLeaveHours > 0 ? `
-                                    <div style="display: flex; justify-between; font-size: 0.875rem; color: #fb923c;">
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.875rem; color: #fb923c;">
                                         <span>• 事假 ${data.personalLeaveHours}h（扣全薪）</span>
                                         <span class="font-mono">${formatCurrency(data.personalLeaveDeduction)}</span>
                                     </div>
@@ -1535,8 +1535,8 @@ async function saveSalaryRecord(data) {
             `&otherAllowance1=${encodeURIComponent(data.otherAllowance1 || 0)}` +
             `&otherAllowance2=${encodeURIComponent(data.otherAllowance2 || 0)}` +
             `&otherAllowance3=${encodeURIComponent(data.otherAllowance3 || 0)}` +
-            `&weekdayOvertimePay=${encodeURIComponent(data.weekdayOvertimePay || 0)}` +
-            `&restdayOvertimePay=${encodeURIComponent(data.restdayOvertimePay || 0)}` +
+            `&weekdayOvertimePay=${encodeURIComponent(data.weekdayOvertimePay || data.extendedOvertimeFirst2h || 0)}` +
+            `&restdayOvertimePay=${encodeURIComponent(data.restdayOvertimePay || data.extendedOvertimeAfter2h || 0)}` +
             `&holidayOvertimePay=${encodeURIComponent(data.holidayOvertimePay || 0)}` +
             
             // ⭐⭐⭐ 補薪項目（修正命名）
