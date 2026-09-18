@@ -108,6 +108,23 @@ function renderTranslations(container = document) {
     });
 }
 /**
+ * 取得 LINE 登入網址：有設定 lineChannelId 時直接在前端組出，
+ * 不必等後端（Apps Script 回應可能要好幾秒）
+ */
+async function getLineLoginUrl() {
+    if (API_CONFIG.lineChannelId) {
+        const state = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2));
+        return 'https://access.line.me/oauth2/v2.1/authorize?response_type=code'
+            + '&client_id=' + encodeURIComponent(API_CONFIG.lineChannelId)
+            + '&redirect_uri=' + encodeURIComponent(API_CONFIG.redirectUrl)
+            + '&state=' + state
+            + '&scope=' + encodeURIComponent('openid profile email');
+    }
+    const res = await callApifetch("getLoginUrl");
+    return res.url;
+}
+
+/**
  * 透過 fetch API 呼叫後端 API。
  * @param {string} action - API 的動作名稱。
  * @param {string} [loadingId="loading"] - 顯示 loading 狀態的 DOM 元素 ID。
@@ -473,7 +490,14 @@ async function ensureLogin()
       document.getElementById("status").textContent = t("CHECKING_LOGIN");
       
       try {
-        const res = await callApifetch("initApp");
+        let res;
+        try {
+          res = await callApifetch("initApp");
+        } catch (e) {
+          // Apps Script 忙碌時偶爾回傳錯誤頁（非 JSON），initApp 是唯讀的，重試一次
+          console.warn('initApp 失敗，重試一次:', e);
+          res = await callApifetch("initApp");
+        }
         
         if (res.ok) {
           console.log('✅ initApp 成功，儲存快取');
@@ -2308,8 +2332,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const retried = sessionStorage.getItem('loginRetry') === '1';
                 if (/invalid_grant/.test(res.msg || '') && !retried) {
                     sessionStorage.setItem('loginRetry', '1');
-                    const loginRes = await callApifetch("getLoginUrl");
-                    if (loginRes.url) { window.location.href = loginRes.url; return; }
+                    const loginUrl = await getLineLoginUrl();
+                    if (loginUrl) { window.location.href = loginUrl; return; }
                 }
                 sessionStorage.removeItem('loginRetry');
                 showNotification(t("ERROR_LOGIN_FAILED", { msg: res.msg || t("UNKNOWN_ERROR") }), "error");
@@ -2329,8 +2353,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 綁定按鈕事件
     loginBtn.onclick = async () => {
         sessionStorage.removeItem('loginRetry');
-        const res = await callApifetch("getLoginUrl");
-        if (res.url) window.location.href = res.url;
+        const loginUrl = await getLineLoginUrl();
+        if (loginUrl) window.location.href = loginUrl;
     };
     
     logoutBtn.onclick = () => {

@@ -386,9 +386,11 @@ function checkSession_(sessionToken) {
         return { ok: false, code: "ERR_SESSION_EXPIRED" };
       }
       
-      // 延長 Session
-      const newExpiredAt = new Date(new Date().getTime() + SESSION_TTL_MS);
-      sh.getRange(i + 1, 4).setValue(newExpiredAt);
+      // 延長 Session：剩餘效期不到一半才寫回，避免每次 API 呼叫都寫試算表拖慢速度
+      const nowMs = new Date().getTime();
+      if (!expiredAt || new Date(expiredAt).getTime() - nowMs < SESSION_TTL_MS / 2) {
+        sh.getRange(i + 1, 4).setValue(new Date(nowMs + SESSION_TTL_MS));
+      }
       
       // 查詢員工資料
       const employee = findEmployeeByLineUserId_(userId);
