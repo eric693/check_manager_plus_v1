@@ -2255,10 +2255,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     const otoken = params.get('code');
     const translationPromise = loadTranslations(currentLang);
-    if (otoken) {
+    // LINE 的 authorization code 只能兌換一次：先把 code 從網址移除，
+    // 避免重新整理 / LINE 內建瀏覽器還原分頁時重送同一個 code 造成 invalid_grant
+    if (otoken) history.replaceState({}, '', window.location.pathname);
+    const codeAlreadyUsed = otoken && sessionStorage.getItem('lastLineCode') === otoken;
+    if (otoken && !codeAlreadyUsed) {
+        sessionStorage.setItem('lastLineCode', otoken);
         try {
-            const res = await callApifetch(`getProfile&otoken=${otoken}`);
+            const res = await callApifetch(`getProfile&otoken=${encodeURIComponent(otoken)}`);
             if (res.ok && res.sToken) {
+                sessionStorage.removeItem('loginRetry');
                 // 儲存 Session Token
                 localStorage.setItem("sessionToken", res.sToken);
                 
@@ -2298,6 +2304,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 initBiometricPunch();
                 
             } else {
+                // code 已失效（invalid_grant）：自動重新走一次 LINE 登入，只重試一次避免無限跳轉
+                const retried = sessionStorage.getItem('loginRetry') === '1';
+                if (/invalid_grant/.test(res.msg || '') && !retried) {
+                    sessionStorage.setItem('loginRetry', '1');
+                    const loginRes = await callApifetch("getLoginUrl");
+                    if (loginRes.url) { window.location.href = loginRes.url; return; }
+                }
+                sessionStorage.removeItem('loginRetry');
                 showNotification(t("ERROR_LOGIN_FAILED", { msg: res.msg || t("UNKNOWN_ERROR") }), "error");
                 loginBtn.style.display = 'block';
             }
@@ -2307,12 +2321,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             loginBtn.style.display = 'block';
         }
     } else {
+        // 網址帶的 code 已用過（例如重新整理）：改用既有 session 登入
         ensureLogin();
         initBiometricPunch();
     }
     
     // 綁定按鈕事件
     loginBtn.onclick = async () => {
+        sessionStorage.removeItem('loginRetry');
         const res = await callApifetch("getLoginUrl");
         if (res.url) window.location.href = res.url;
     };
